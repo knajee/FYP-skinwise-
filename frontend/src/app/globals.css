@@ -2,26 +2,123 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  * {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-canvas text-white font-sans;
+  }
+
+  ::selection {
+    @apply bg-accent/20 text-white;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Card surfaces */
+  .card-surface-1 {
+    @apply bg-surface-1 border border-white/[0.06] rounded-xl shadow-card;
+  }
+  .card-surface-2 {
+    @apply bg-surface-2 rounded-lg;
+  }
+  .card-surface-3 {
+    @apply bg-surface-3 rounded-lg;
+  }
+
+  /* Noise texture overlay */
+  .noise-overlay {
+    position: relative;
+  }
+  .noise-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    z-index: 1;
+  }
+
+  /* Severity badges */
+  .badge-clear {
+    @apply bg-emerald-500/10 text-emerald-400 border border-emerald-500/20;
+  }
+  .badge-mild {
+    @apply bg-amber-500/10 text-amber-400 border border-amber-500/20;
+  }
+  .badge-moderate {
+    @apply bg-orange-500/10 text-orange-400 border border-orange-500/20;
+  }
+  .badge-severe {
+    @apply bg-rose-500/10 text-rose-400 border border-rose-500/20;
+  }
+  .badge-skin-type {
+    @apply bg-teal-500/10 text-teal-300 border border-teal-500/20;
+  }
+
+  /* Stagger animation for children */
+  .stagger-children > * {
+    @apply opacity-0 animate-fade-in-up;
+  }
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .gradient-radial-hero {
+    background: radial-gradient(
+      ellipse at top center,
+      rgba(45, 212, 191, 0.05) 0%,
+      transparent 60%
+    );
+  }
+  .gradient-teal-dark {
+    background: radial-gradient(ellipse at center, #0d2b2b 0%, #0a0a0f 70%);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
