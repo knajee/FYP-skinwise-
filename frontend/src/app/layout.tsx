@@ -28,6 +28,24 @@ export const metadata: Metadata = {
     "lesion detection",
     "skin tracking",
   ],
+  openGraph: {
+    title: "SkinWISE 2.0",
+    description: "AI-powered skincare wellness tracking",
+    siteName: "SkinWISE 2.0",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SkinWISE 2.0",
+    description: "AI-powered skincare wellness tracking",
+  },
+};
+
+export const viewport = {
+  themeColor: "#F5EFE6",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -38,7 +56,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} ${dmSerif.variable}`}>
       <body
-        className={`${dmSans.className} bg-skin-cream min-h-screen antialiased`}
+        className={`${dmSans.className} bg-bg-base min-h-screen antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

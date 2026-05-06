@@ -1,207 +1,184 @@
-/* ─── Google Fonts ─── */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Design Tokens ─── */
 :root {
-  /* Core palette */
-  --skin-cream: #F5EFE6;
-  --skin-warm: #E8D5C0;
-  --skin-charcoal: #1C1917;
-  --skin-sage: #5C7A6B;
-  --skin-amber: #C4831A;
-  --skin-rose: #B5404A;
-  --skin-sky: #3B6EA5;
-  --skin-muted: #78716C;
-  --skin-border: #D6C9B8;
-  --skin-surface: #FFFFFF;
+  /* ── Backgrounds (light → warm) ── */
+  --bg-base:        #F7F2EC;   /* page canvas — warm off-white, never pure white */
+  --bg-surface:     #FFFFFF;   /* cards, modals, elevated panels */
+  --bg-subtle:      #EEE7DC;   /* secondary backgrounds, hover states, code blocks */
+  --bg-muted:       #E3D9CC;   /* dividers, skeleton loaders, disabled inputs */
 
-  /* Severity colour map */
-  --severity-clear: var(--skin-sage);
-  --severity-mild: var(--skin-sky);
-  --severity-moderate: var(--skin-amber);
-  --severity-severe: var(--skin-rose);
+  /* ── Text (always on light backgrounds) ── */
+  --text-primary:   #1A1410;   /* headings, body — near-black with warm undertone */
+  --text-secondary: #5C4F42;   /* secondary labels, descriptions, captions */
+  --text-tertiary:  #8C7B6E;   /* placeholder, hint text, timestamps */
+  --text-inverse:   #F7F2EC;   /* text on dark/coloured backgrounds ONLY */
 
-  /* Lesion colour map */
-  --lesion-comedone: #94A3B8;
-  --lesion-papule: #3B82F6;
-  --lesion-pustule: #EAB308;
-  --lesion-nodule: #EF4444;
+  /* ── Primary Brand — Warm Charcoal ── */
+  --brand-primary:  #1A1410;   /* main CTA buttons, primary interactive */
+  --brand-hover:    #2E2318;   /* hover state for primary */
+
+  /* ── Accent — Sage Green (science / wellness) ── */
+  --accent:         #4A7260;   /* links, focus rings, active nav items */
+  --accent-light:   #D6EBE4;   /* accent tinted backgrounds, badge fills */
+  --accent-dark:    #2D4E40;   /* accent on white surface, deeper shade */
+
+  /* ── Severity — strict, non-negotiable ── */
+  --severity-clear:    #4A7260;   /* sage — positive / all clear */
+  --severity-clear-bg: #D6EBE4;
+  --severity-mild:     #3A6B9E;   /* steel blue — informational */
+  --severity-mild-bg:  #D6E8F5;
+  --severity-mod:      #A0621A;   /* amber — caution */
+  --severity-mod-bg:   #FAEBD4;
+  --severity-severe:   #9B2335;   /* deep rose — alert */
+  --severity-severe-bg:#F5D5D9;
+
+  /* ── Lesion Classes ── */
+  --lesion-comedone: #6B7280;   /* neutral grey */
+  --lesion-papule:   #2563EB;   /* clear blue */
+  --lesion-pustule:  #CA8A04;   /* amber */
+  --lesion-nodule:   #DC2626;   /* red */
+
+  /* ── Borders ── */
+  --border-default: #D5C9BA;   /* standard card/input borders */
+  --border-strong:  #A89880;   /* stronger dividers */
+  --border-focus:   #4A7260;   /* focus rings — accent colour */
+
+  /* ── Feedback ── */
+  --feedback-success:    #4A7260;
+  --feedback-success-bg: #D6EBE4;
+  --feedback-warning:    #A0621A;
+  --feedback-warning-bg: #FAEBD4;
+  --feedback-error:      #9B2335;
+  --feedback-error-bg:   #F5D5D9;
+  --feedback-info:       #3A6B9E;
+  --feedback-info-bg:    #D6E8F5;
+
+  /* ── Typography ── */
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+
+  /* ── Spacing & Radius ── */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 9999px;
+
+  /* ── Shadow ── */
+  --shadow-sm:  0 1px 3px rgba(26, 20, 16, 0.08), 0 1px 2px rgba(26, 20, 16, 0.04);
+  --shadow-md:  0 4px 12px rgba(26, 20, 16, 0.10), 0 2px 4px rgba(26, 20, 16, 0.06);
+  --shadow-lg:  0 8px 24px rgba(26, 20, 16, 0.12), 0 4px 8px rgba(26, 20, 16, 0.06);
 }
 
-/* ─── CSS Reset & Base ─── */
 @layer base {
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
+  /* Base layer — apply immediately */
   html {
-    scroll-behavior: smooth;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
   body {
-    font-family: 'DM Sans', sans-serif;
-    color: var(--skin-charcoal);
-    background-color: var(--skin-cream);
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-size: 15px;
     line-height: 1.6;
     min-height: 100vh;
   }
 
-  h1, h2, h3, h4 {
-    font-family: 'DM Serif Display', serif;
+  /* ── Typography scale ── */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    color: var(--text-primary);       /* DARK on light background — always */
     line-height: 1.2;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
 
-  img, picture, video, canvas, svg {
-    display: block;
-    max-width: 100%;
-  }
+  h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+  h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
+  h3 { font-size: clamp(1.25rem, 2vw, 1.75rem); }
+  h4 { font-size: 1.25rem; }
 
-  input, button, textarea, select {
-    font: inherit;
+  p, li, td, th {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    line-height: 1.7;
   }
 
   a {
-    color: inherit;
+    color: var(--accent);
     text-decoration: none;
+    transition: color 150ms ease;
+  }
+  a:hover { color: var(--accent-dark); }
+
+  /* Focus rings — accessible, on-brand */
+  *:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
   }
 
-  ::selection {
-    background: rgba(92, 122, 107, 0.2);
-    color: var(--skin-charcoal);
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--skin-sage);
-    outline-offset: 2px;
-  }
-
-  /* ─── Custom Scrollbar (WebKit) ─── */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--skin-border);
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--skin-muted);
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--skin-charcoal);
-  }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-subtle); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-full); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 }
 
-/* ─── Component Classes ─── */
 @layer components {
-  /* Gradient background utility */
-  .skin-gradient {
-    background: linear-gradient(135deg, var(--skin-cream) 0%, var(--skin-warm) 100%);
+  /* ── Utility classes ── */
+  .text-display { font-family: var(--font-display); }
+
+  .surface-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
   }
 
-  /* Glass panel utility */
-  .glass-panel {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--skin-border);
-    border-radius: 16px;
+  .surface-card-elevated {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
   }
 
-  /* Severity badges */
-  .badge-clear {
-    background: rgba(92, 122, 107, 0.1);
-    color: var(--severity-clear);
-    border: 1px solid rgba(92, 122, 107, 0.2);
-  }
-  .badge-mild {
-    background: rgba(59, 110, 165, 0.1);
-    color: var(--severity-mild);
-    border: 1px solid rgba(59, 110, 165, 0.2);
-  }
-  .badge-moderate {
-    background: rgba(196, 131, 26, 0.1);
-    color: var(--severity-moderate);
-    border: 1px solid rgba(196, 131, 26, 0.2);
-  }
-  .badge-severe {
-    background: rgba(181, 64, 74, 0.1);
-    color: var(--severity-severe);
-    border: 1px solid rgba(181, 64, 74, 0.2);
+  .surface-subtle {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
   }
 
-  /* Card surfaces */
-  .card-surface {
-    background: var(--skin-surface);
-    border: 1px solid var(--skin-border);
-    border-radius: 16px;
-  }
+  /* Severity badge base */
+  .badge-clear    { background: var(--severity-clear-bg);  color: var(--severity-clear);  }
+  .badge-mild     { background: var(--severity-mild-bg);   color: var(--severity-mild);   }
+  .badge-moderate { background: var(--severity-mod-bg);    color: var(--severity-mod);    }
+  .badge-severe   { background: var(--severity-severe-bg); color: var(--severity-severe); }
 
-  /* Stagger animation for children */
-  .stagger-children > * {
-    opacity: 0;
-    animation: fadeInUp 300ms ease-out forwards;
-  }
-  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-  .stagger-children > *:nth-child(2) { animation-delay: 60ms; }
-  .stagger-children > *:nth-child(3) { animation-delay: 80ms; }
-  .stagger-children > *:nth-child(4) { animation-delay: 120ms; }
-  .stagger-children > *:nth-child(5) { animation-delay: 160ms; }
-  .stagger-children > *:nth-child(6) { animation-delay: 200ms; }
+  /* Feedback banner base */
+  .banner-success { background: var(--feedback-success-bg); color: var(--feedback-success); border: 1px solid color-mix(in srgb, var(--feedback-success) 20%, transparent); }
+  .banner-warning { background: var(--feedback-warning-bg); color: var(--feedback-warning); border: 1px solid color-mix(in srgb, var(--feedback-warning) 20%, transparent); }
+  .banner-error   { background: var(--feedback-error-bg);   color: var(--feedback-error);   border: 1px solid color-mix(in srgb, var(--feedback-error) 20%, transparent); }
+  .banner-info    { background: var(--feedback-info-bg);    color: var(--feedback-info);    border: 1px solid color-mix(in srgb, var(--feedback-info) 20%, transparent); }
+
+  /* Animation utilities (can also use tailwind's animation config) */
+  .animate-fade-in  { animation: fadeIn 300ms ease forwards; }
+  .animate-pulse-ring { animation: pulse-ring 2s ease-in-out infinite; }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
-/* ─── Keyframe Definitions ─── */
-@keyframes fadeInUp {
-  0% {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulseRing {
-  0% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
-
-/* ─── Reduced Motion ─── */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  html {
-    scroll-behavior: auto;
-  }
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.05); }
 }
