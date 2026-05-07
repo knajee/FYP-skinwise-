@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ─── Types ─── */
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "accent";
 export type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,19 +15,21 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 /* ─── Variant Styles ─── */
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary:
-    "bg-skin-charcoal text-skin-cream hover:bg-skin-charcoal/90 active:bg-skin-charcoal/80",
+    "bg-brand text-text-inverse hover:bg-brand-hover border border-brand active:scale-[0.98] font-semibold",
   secondary:
-    "bg-transparent text-skin-charcoal border border-skin-charcoal hover:bg-skin-charcoal/5 active:bg-skin-charcoal/10",
+    "bg-transparent text-text-primary border border-border-default hover:bg-bg-subtle active:scale-[0.98] font-medium",
   ghost:
-    "bg-transparent text-skin-charcoal border-none hover:bg-skin-warm active:bg-skin-warm/80",
+    "bg-transparent text-text-secondary hover:bg-bg-subtle hover:text-text-primary border-transparent active:scale-[0.98]",
   danger:
-    "bg-skin-rose text-white hover:bg-skin-rose/90 active:bg-skin-rose/80",
+    "bg-severity-severe text-text-primary hover:opacity-90 border border-severity-severe font-semibold",
+  accent:
+    "bg-accent text-text-primary hover:bg-accent-dark border border-accent font-semibold",
 } as const;
 
 const SIZE_STYLES: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-xs gap-1.5",
-  md: "h-10 px-4 text-sm gap-2",
-  lg: "h-12 px-6 text-base gap-2.5",
+  sm: "px-3 py-1.5 text-sm rounded-md",
+  md: "px-5 py-2.5 text-sm rounded-lg",
+  lg: "px-7 py-3.5 text-base rounded-lg",
 } as const;
 
 /* ─── Component ─── */
@@ -51,9 +53,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={isDisabled}
         className={cn(
-          "inline-flex items-center justify-center font-medium rounded-card transition-all duration-200",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-skin-sage",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
+          "inline-flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none",
           VARIANT_STYLES[variant],
           SIZE_STYLES[size],
           className
