@@ -3,47 +3,61 @@ import { cn } from "@/lib/utils";
 /* ─── Types ─── */
 export type SeverityGrade = "Clear" | "Mild" | "Moderate" | "Severe";
 
-export const SEVERITY_COLORS: Record<SeverityGrade, string> = {
-  Clear: "var(--severity-clear)",
-  Mild: "var(--severity-mild)",
-  Moderate: "var(--severity-moderate)",
-  Severe: "var(--severity-severe)",
-} as const;
-
 const SEVERITY_STYLES: Record<SeverityGrade, string> = {
-  Clear: "bg-skin-sage/10 text-skin-sage border-skin-sage/20",
-  Mild: "bg-skin-sky/10 text-skin-sky border-skin-sky/20",
-  Moderate: "bg-skin-amber/10 text-skin-amber border-skin-amber/20",
-  Severe: "bg-skin-rose/10 text-skin-rose border-skin-rose/20",
+  Clear: "badge-clear",
+  Mild: "badge-mild",
+  Moderate: "badge-moderate",
+  Severe: "badge-severe",
 } as const;
 
 const SEVERITY_DOT: Record<SeverityGrade, string> = {
-  Clear: "bg-skin-sage",
-  Mild: "bg-skin-sky",
-  Moderate: "bg-skin-amber",
-  Severe: "bg-skin-rose",
+  Clear: "bg-severity-clear",
+  Mild: "bg-severity-mild",
+  Moderate: "bg-severity-moderate",
+  Severe: "bg-severity-severe",
 } as const;
 
 /* ─── Component ─── */
 interface BadgeProps {
   grade: SeverityGrade;
+  variant?: "default" | "hero";
   className?: string;
 }
 
-export default function Badge({ grade, className }: BadgeProps) {
+const DESCRIPTIONS: Record<SeverityGrade, string> = {
+  Clear: "No lesions detected",
+  Mild: "Few lesions, predominantly non-inflammatory",
+  Moderate: "Mixed inflammatory involvement",
+  Severe: "High lesion burden or significant nodular involvement",
+};
+
+export default function Badge({ grade, variant = "default", className }: BadgeProps) {
+  const isHero = variant === "hero";
+  
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border tracking-wide uppercase",
-        SEVERITY_STYLES[grade],
-        className
-      )}
-    >
+    <div className={cn("flex flex-col items-start gap-2", className)} aria-label={`Severity grade: ${grade}`}>
       <span
-        className={cn("w-1.5 h-1.5 rounded-full", SEVERITY_DOT[grade])}
-        aria-hidden="true"
-      />
-      {grade}
-    </span>
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full font-semibold border border-transparent tracking-wide uppercase",
+          isHero ? "px-4 py-2 text-base rounded-xl" : "px-3 py-1 text-sm rounded-full",
+          SEVERITY_STYLES[grade]
+        )}
+      >
+        <span
+          className={cn("rounded-full", isHero ? "w-2.5 h-2.5" : "w-1.5 h-1.5", SEVERITY_DOT[grade])}
+          aria-hidden="true"
+        />
+        {grade}
+      </span>
+      
+      {isHero && (
+        <div className="mt-1">
+          <p className="text-sm font-medium text-text-primary">{DESCRIPTIONS[grade]}</p>
+          <p className="text-xs italic text-text-tertiary mt-1">
+            This is a wellness estimate based on detected lesions — not a clinical assessment.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
