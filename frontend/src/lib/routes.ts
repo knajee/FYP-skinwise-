@@ -18,6 +18,7 @@ export const ROUTES = {
   PROFILE: "/profile",
   SETTINGS: "/settings",
   ONBOARDING: "/onboarding",
+  QUESTIONNAIRE: "/questionnaire",
   RESULTS: (id: string) => `/results/${id}` as const,
 } as const;
 
@@ -32,6 +33,7 @@ export const PROTECTED_ROUTES = [
   "/settings",
   "/results",
   "/onboarding",
+  "/questionnaire",
 ] as const;
 
 /** Routes that should redirect to dashboard if already authenticated */
