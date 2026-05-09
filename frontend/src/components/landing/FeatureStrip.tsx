@@ -25,7 +25,7 @@ const features = [
 
 export default function FeatureStrip() {
   return (
-    <section id="features" className="bg-surface-1 border-y border-white/[0.06]">
+    <section id="features" className="bg-bg-surface border-y border-border-default">
       <div className="max-w-container mx-auto px-6 py-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
           {features.map((f, i) => (
@@ -33,13 +33,13 @@ export default function FeatureStrip() {
               key={f.label}
               className={`flex flex-col items-center text-center px-6 py-6 lg:py-0 ${
                 i < features.length - 1
-                  ? "lg:border-r border-b lg:border-b-0 border-white/[0.06]"
+                  ? "lg:border-r border-b lg:border-b-0 border-border-default"
                   : ""
               }`}
             >
               <f.icon className="w-6 h-6 text-accent mb-3" strokeWidth={1.5} />
-              <h3 className="text-body font-medium text-white mb-1">{f.label}</h3>
-              <p className="text-micro text-slate-400 max-w-[200px]">
+              <h3 className="font-display text-xl text-text-primary mb-1">{f.label}</h3>
+              <p className="text-sm text-text-secondary max-w-[200px]">
                 {f.description}
               </p>
             </div>

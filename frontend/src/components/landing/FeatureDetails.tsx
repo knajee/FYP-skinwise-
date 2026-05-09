@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 /* ─── Mock detection visual (SVG) ─── */
 function DetectionVisual() {
   return (
-    <div className="relative w-full aspect-[4/3] bg-surface-2 rounded-xl overflow-hidden border border-white/[0.06]">
+    <div className="relative w-full aspect-[4/3] bg-bg-surface rounded-xl overflow-hidden border border-border-default shadow-sm">
       {/* Simulated face silhouette */}
       <svg viewBox="0 0 400 300" className="w-full h-full" fill="none">
         <rect width="400" height="300" fill="#13151F" />
@@ -24,9 +24,9 @@ function DetectionVisual() {
       </svg>
       {/* Count overlay */}
       <div className="absolute bottom-3 left-3 flex gap-2">
-        <span className="text-micro font-mono px-2 py-1 rounded bg-black/60 text-lesion-comedone">C 4</span>
-        <span className="text-micro font-mono px-2 py-1 rounded bg-black/60 text-lesion-papule">Pa 2</span>
-        <span className="text-micro font-mono px-2 py-1 rounded bg-black/60 text-lesion-pustule">Pu 1</span>
+        <span className="text-xs font-mono px-2 py-1 rounded bg-black/60 text-lesion-comedone">C 4</span>
+        <span className="text-xs font-mono px-2 py-1 rounded bg-black/60 text-lesion-papule">Pa 2</span>
+        <span className="text-xs font-mono px-2 py-1 rounded bg-black/60 text-lesion-pustule">Pu 1</span>
       </div>
     </div>
   );
@@ -35,32 +35,32 @@ function DetectionVisual() {
 /* ─── Skin type fusion visual ─── */
 function FusionVisual() {
   return (
-    <div className="w-full aspect-[4/3] bg-surface-2 rounded-xl overflow-hidden border border-white/[0.06] p-6 flex flex-col justify-center">
+    <div className="w-full aspect-[4/3] bg-bg-surface rounded-xl overflow-hidden border border-border-default shadow-sm p-6 flex flex-col justify-center">
       <div className="flex items-center justify-between gap-3">
         {/* Questionnaire signal */}
-        <div className="flex-1 card-surface-1 p-4 text-center">
-          <div className="text-micro font-mono text-slate-500 mb-2">QUESTIONNAIRE</div>
-          <div className="text-card-header font-display text-white">78%</div>
-          <div className="text-micro text-slate-400">Balanced</div>
+        <div className="flex-1 bg-bg-subtle rounded-lg p-4 text-center">
+          <div className="text-xs font-semibold uppercase tracking-wider text-text-tertiary mb-2">QUESTIONNAIRE</div>
+          <div className="font-display text-4xl font-bold text-text-primary">78%</div>
+          <div className="text-sm text-accent font-medium">Balanced</div>
         </div>
         {/* Arrow */}
         <div className="flex flex-col items-center gap-1">
           <div className="w-8 h-px bg-accent/40" />
-          <div className="text-micro font-mono text-accent">FUSION</div>
+          <div className="text-xs font-bold uppercase tracking-widest text-text-tertiary">FUSION</div>
           <div className="w-8 h-px bg-accent/40" />
         </div>
         {/* Image signal */}
-        <div className="flex-1 card-surface-1 p-4 text-center">
-          <div className="text-micro font-mono text-slate-500 mb-2">IMAGE AI</div>
-          <div className="text-card-header font-display text-white">61%</div>
-          <div className="text-micro text-slate-400">Balanced</div>
+        <div className="flex-1 bg-bg-subtle rounded-lg p-4 text-center">
+          <div className="text-xs font-semibold uppercase tracking-wider text-text-tertiary mb-2">IMAGE AI</div>
+          <div className="font-display text-4xl font-bold text-text-primary">61%</div>
+          <div className="text-sm text-accent font-medium">Balanced</div>
         </div>
       </div>
       {/* Result */}
       <div className="mt-4 text-center">
-        <div className="inline-flex items-center gap-2 badge-skin-type px-4 py-2 rounded-lg text-sm font-medium">
-          <span className="w-2 h-2 rounded-full bg-teal-400" />
-          Balanced · 72% confidence
+        <div className="bg-accent-light border border-accent/20 rounded-full px-5 py-2.5 inline-flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-accent" />
+          <span className="text-sm font-semibold text-accent-dark">Balanced · 72% confidence</span>
         </div>
       </div>
     </div>
@@ -70,7 +70,7 @@ function FusionVisual() {
 /* ─── Environmental chart visual ─── */
 function EnvironmentalVisual() {
   return (
-    <div className="w-full aspect-[4/3] bg-surface-2 rounded-xl overflow-hidden border border-white/[0.06] p-6 flex flex-col justify-center">
+    <div className="w-full aspect-[4/3] bg-bg-surface rounded-xl overflow-hidden border border-border-default shadow-sm p-6 flex flex-col justify-center">
       {/* Mini metric cards */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         {[
@@ -79,10 +79,10 @@ function EnvironmentalVisual() {
           { icon: "☀", value: "UV 5.2", label: "UV Index", warn: true },
           { icon: "🌫", value: "42µg", label: "PM2.5" },
         ].map((m) => (
-          <div key={m.label} className="card-surface-1 p-3 text-center">
+          <div key={m.label} className="bg-bg-subtle rounded-lg p-3 text-center">
             <div className="text-sm mb-1">{m.icon}</div>
-            <div className={`text-emphasis font-display ${m.warn ? "text-amber-400" : "text-white"}`}>{m.value}</div>
-            <div className="text-micro text-slate-500">{m.label}</div>
+            <div className={`font-display text-2xl ${m.warn ? "text-severity-mod" : "text-text-primary"}`}>{m.value}</div>
+            <div className="text-xs text-text-tertiary uppercase tracking-wide">{m.label}</div>
           </div>
         ))}
       </div>
@@ -170,8 +170,8 @@ function CounterRow({ counters }: { counters: { value: number; label: string }[]
         const { count, ref } = useCountUp(c.value);
         return (
           <div key={c.label} ref={ref} className="flex items-baseline gap-1.5">
-            <span className="text-section font-display text-accent">{count}</span>
-            <span className="text-xs-body text-slate-400">{c.label}</span>
+            <span className="font-display text-2xl text-accent">{count}</span>
+            <span className="text-sm text-text-secondary">{c.label}</span>
           </div>
         );
       })}
@@ -198,13 +198,13 @@ export default function FeatureDetails() {
               </div>
               {/* Text */}
               <div className="w-full lg:w-1/2">
-                <div className="text-micro font-mono text-accent uppercase tracking-wider mb-3">
+                <div className="font-sans text-xs font-semibold uppercase tracking-widest text-text-tertiary mb-3">
                   {s.badge}
                 </div>
-                <h2 className="font-display text-section text-white mb-4 text-balance">
+                <h2 className="font-display text-3xl text-text-primary mb-4 text-balance">
                   {s.title}
                 </h2>
-                <p className="text-body text-slate-400 leading-relaxed">
+                <p className="font-sans text-text-secondary text-[0.9375rem] leading-relaxed">
                   {s.description}
                 </p>
                 {s.counters && <CounterRow counters={s.counters} />}

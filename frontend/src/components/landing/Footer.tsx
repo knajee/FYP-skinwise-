@@ -41,12 +41,12 @@ const columns = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-white/[0.06] py-16">
+    <footer className="border-t border-border-default py-16 bg-bg-surface">
       <div className="max-w-container mx-auto px-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {columns.map((col) => (
             <div key={col.title}>
-              <h4 className="text-xs-body font-medium text-white mb-4">
+              <h4 className="font-sans font-semibold text-text-primary text-base mb-4">
                 {col.title}
               </h4>
               <ul className="space-y-2.5">
@@ -54,7 +54,7 @@ export default function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-xs-body text-slate-400 hover:text-white transition-colors duration-150"
+                      className="text-[0.9375rem] text-text-secondary hover:text-text-primary transition-colors duration-150"
                     >
                       {link.label}
                     </Link>
@@ -64,9 +64,9 @@ export default function Footer() {
             </div>
           ))}
         </div>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-white/[0.06]">
-          <span className="font-display text-lg text-white">SkinWISE</span>
-          <p className="text-micro text-slate-500">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-border-default">
+          <span className="font-display text-lg text-text-primary">SkinWISE</span>
+          <p className="text-xs text-text-tertiary">
             © 2026 SkinWISE. Wellness tracking only — not a medical device.
           </p>
         </div>

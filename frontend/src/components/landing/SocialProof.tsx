@@ -18,17 +18,17 @@ export default function SocialProof() {
   ];
 
   return (
-    <section id="methodology" className="bg-surface-1 border-y border-white/[0.06] py-20">
+    <section id="methodology" className="bg-bg-surface border-y border-border-default py-20">
       <div className="max-w-container mx-auto px-6">
-        <p className="text-xs-body font-mono text-slate-500 uppercase tracking-wider text-center mb-10">
+        <p className="font-sans text-xs font-semibold uppercase tracking-widest text-text-tertiary text-center mb-10">
           Built on peer-reviewed methodology
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {citations.map((c) => (
-            <div key={c.title} className="card-surface-2 p-5">
-              <h3 className="text-body font-medium text-white mb-1">{c.title}</h3>
-              <p className="text-micro font-mono text-slate-500 mb-2">{c.source}</p>
-              <p className="text-xs-body text-slate-400">{c.detail}</p>
+            <div key={c.title} className="bg-bg-subtle rounded-lg p-5 border border-border-default shadow-sm">
+              <h3 className="font-sans font-semibold text-text-primary text-base mb-1">{c.title}</h3>
+              <p className="text-xs text-text-tertiary uppercase tracking-wide mb-2">{c.source}</p>
+              <p className="text-[0.9375rem] text-text-secondary">{c.detail}</p>
             </div>
           ))}
         </div>
