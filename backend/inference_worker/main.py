@@ -7,135 +7,139 @@ from PIL import Image
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
-app = FastAPI(title="SkinWISE Inference Worker (SAHI Enabled)", version="1.1")
+app = FastAPI(title="SkinWISE Inference Worker", version="1.0")
 
+# Load ONNX session globally on startup. NEVER load this per-request.
+# Path assumes the worker is run from the `backend/inference_worker` directory.
 MODEL_PATH = "../../models/best.onnx"
+SKINTYPE_MODEL_PATH = "../../models/skinwise_mobilenetv2_skintype.onnx"
+
 try:
+    # CPU execution provider. Swap to 'CUDAExecutionProvider' later if GPU is available.
     SESSION = ort.InferenceSession(MODEL_PATH, providers=['CPUExecutionProvider'])
     INPUT_NAME = SESSION.get_inputs()[0].name
 except Exception as e:
-    print(f"CRITICAL: Failed to load ONNX model. Error: {e}")
+    print(f"CRITICAL: Failed to load YOLO ONNX model at {MODEL_PATH}. Error: {e}")
     SESSION = None
 
-# Production Thresholds
-CONF_THRESH = 0.20
-IOU_THRESH = 0.40
-SLICE_SIZE = 640
-OVERLAP_RATIO = 0.20
-MAX_IMAGE_DIM = 1280  # Pre-scale limit to prevent CPU timeout
+try:
+    SKINTYPE_SESSION = ort.InferenceSession(SKINTYPE_MODEL_PATH, providers=['CPUExecutionProvider'])
+    SKINTYPE_INPUT = SKINTYPE_SESSION.get_inputs()[0].name
+except Exception as e:
+    print(f"CRITICAL: Failed to load Skin Type ONNX model at {SKINTYPE_MODEL_PATH}. Error: {e}")
+    SKINTYPE_SESSION = None
 
-def get_slice_bboxes(image_w, image_h, slice_size, overlap_ratio):
-    """Calculates overlapping grid coordinates for the sliding window."""
-    stride = int(slice_size * (1 - overlap_ratio))
-    bboxes = []
+# PSD Thresholds & ImageNet Constants
+CONF_THRESH = 0.15
+IOU_THRESH = 0.45
+IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+
+def letterbox_image(image: Image.Image, target_size: tuple) -> tuple:
+    """
+    Resizes image with an unmodified aspect ratio using padding (letterboxing).
+    YOLOv8 requires this specific preprocessing to prevent spatial distortion.
+    """
+    iw, ih = image.size
+    w, h = target_size
+    scale = min(w/iw, h/ih)
+    nw = int(iw * scale)
+    nh = int(ih * scale)
+
+    image = image.resize((nw, nh), Image.Resampling.LANCZOS)
+    new_image = Image.new('RGB', target_size, (114, 114, 114)) # Standard YOLO padding color
+    new_image.paste(image, ((w - nw) // 2, (h - nh) // 2))
     
-    for y in range(0, image_h, stride):
-        for x in range(0, image_w, stride):
-            x_min = x
-            y_min = y
-            x_max = min(x_min + slice_size, image_w)
-            y_max = min(y_min + slice_size, image_h)
-            
-            # If the slice hits the right/bottom edge, shift it back to maintain 640x640
-            if x_max - x_min < slice_size:
-                x_min = max(0, x_max - slice_size)
-            if y_max - y_min < slice_size:
-                y_min = max(0, y_max - slice_size)
-                
-            bbox = (x_min, y_min, x_min + slice_size, y_min + slice_size)
-            if bbox not in bboxes:
-                bboxes.append(bbox)
-                
-    return bboxes
-
-def process_slice(slice_img: Image.Image) -> np.ndarray:
-    """Formats a 640x640 slice for ONNX ingestion."""
-    img_data = np.array(slice_img, dtype=np.float32) / 255.0
-    img_data = np.transpose(img_data, (2, 0, 1))
-    return np.expand_dims(img_data, axis=0)
+    # Return padded image and the padding metadata to adjust bounding boxes later
+    dw = (w - nw) / 2
+    dh = (h - nh) / 2
+    return new_image, scale, dw, dh
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if SESSION is None:
         raise HTTPException(status_code=500, detail="ONNX Model not loaded.")
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Invalid file type. Image required.")
 
     start_time = time.perf_counter()
-    image_bytes = await file.read()
     
+    # 1. Read and Preprocess
+    image_bytes = await file.read()
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     except Exception:
         raise HTTPException(status_code=400, detail="Corrupted image file.")
         
     orig_w, orig_h = img.size
+    padded_img, scale, dw, dh = letterbox_image(img, (640, 640))
     
-    # 1. Pre-scale to prevent inference timeout on massive images
-    scale_factor = 1.0
-    if max(orig_w, orig_h) > MAX_IMAGE_DIM:
-        scale_factor = MAX_IMAGE_DIM / float(max(orig_w, orig_h))
-        new_w = int(orig_w * scale_factor)
-        new_h = int(orig_h * scale_factor)
-        img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-    
-    cur_w, cur_h = img.size
-    
-    # 2. Generate SAHI sliding window coordinates
-    slice_coords = get_slice_bboxes(cur_w, cur_h, SLICE_SIZE, OVERLAP_RATIO)
-    
-    global_boxes = []
-    global_scores = []
-    global_class_ids = []
+    # --- YOLO PREPROCESSING ---
+    # Convert to NumPy, normalize, and format to [1, 3, 640, 640]
+    img_data = np.array(padded_img, dtype=np.float32) / 255.0
+    img_data = np.transpose(img_data, (2, 0, 1))
+    img_data = np.expand_dims(img_data, axis=0)
 
-    # 3. Process each slice
-    for (x_min, y_min, x_max, y_max) in slice_coords:
-        slice_img = img.crop((x_min, y_min, x_max, y_max))
-        tensor = process_slice(slice_img)
+    # --- MOBILENETV2 PREPROCESSING ---
+    skin_img = img.resize((224, 224), Image.Resampling.LANCZOS)
+    skin_arr = (np.array(skin_img, dtype=np.float32) / 255.0 - IMAGENET_MEAN) / IMAGENET_STD
+    skin_tensor = np.expand_dims(np.transpose(skin_arr, (2, 0, 1)), axis=0)
+
+    # 2. Run Inference (Sequential for CPU stability, can be threaded if resources allow)
+    outputs = SESSION.run(None, {INPUT_NAME: img_data})
+    output_tensor = outputs[0]  # Shape: [1, 4 + num_classes, 8400]
+    
+    skintype_outputs = SKINTYPE_SESSION.run(None, {SKINTYPE_INPUT: skin_tensor})
+    # Softmax the raw logits to get probabilities
+    logits = skintype_outputs[0][0]
+    exp_logits = np.exp(logits - np.max(logits))
+    skin_probs = exp_logits / exp_logits.sum()
+
+    # 3. Post-Process (NMS & Coordinate Mapping)
+    predictions = np.squeeze(output_tensor).T  # Shape: [8400, 4 + num_classes]
+    
+    boxes = []
+    scores = []
+    class_ids = []
+
+    for row in predictions:
+        # row[0:4] = [x_center, y_center, width, height]
+        # row[4:] = class probabilities
+        class_probs = row[4:]
+        class_id = np.argmax(class_probs)
+        max_prob = class_probs[class_id]
         
-        outputs = SESSION.run(None, {INPUT_NAME: tensor})
-        predictions = np.squeeze(outputs[0]).T  # [8400, 4 + classes]
-        
-        for row in predictions:
-            class_probs = row[4:]
-            class_id = np.argmax(class_probs)
-            max_prob = class_probs[class_id]
+        if max_prob > CONF_THRESH:
+            xc, yc, w, h = row[0:4]
+            # Convert letterboxed coordinates back to original image scale
+            xc = (xc - dw) / scale
+            yc = (yc - dh) / scale
+            w = w / scale
+            h = h / scale
             
-            if max_prob > CONF_THRESH:
-                xc, yc, w, h = row[0:4]
-                
-                # Convert slice-relative coordinates to global image coordinates
-                global_xc = xc + x_min
-                global_yc = yc + y_min
-                
-                x1 = global_xc - (w / 2)
-                y1 = global_yc - (h / 2)
-                
-                global_boxes.append([x1, y1, w, h])
-                global_scores.append(float(max_prob))
-                global_class_ids.append(int(class_id))
+            x1 = xc - (w / 2)
+            y1 = yc - (h / 2)
+            
+            boxes.append([x1, y1, w, h]) # cv2.dnn.NMSBoxes expects [x, y, w, h]
+            scores.append(float(max_prob))
+            class_ids.append(int(class_id))
 
-    # 4. Global Non-Maximum Suppression to merge overlapping boxes from different slices
-    indices = cv2.dnn.NMSBoxes(global_boxes, global_scores, CONF_THRESH, IOU_THRESH)
+    # Apply Non-Maximum Suppression (NMS) to remove duplicate overlapping boxes
+    indices = cv2.dnn.NMSBoxes(boxes, scores, CONF_THRESH, IOU_THRESH)
     
     detections = []
     if len(indices) > 0:
         for i in indices.flatten():
-            x, y, w, h = global_boxes[i]
-            
-            # Revert the pre-scale to map coordinates back to the user's original image
-            orig_x = x / scale_factor
-            orig_y = y / scale_factor
-            orig_w_box = w / scale_factor
-            orig_h_box = h / scale_factor
-            
-            # Normalize to [0, 1] relative to original image
+            x, y, w, h = boxes[i]
+            # Normalize coordinates to [0, 1] relative to original image as per PSD
             det = {
-                "class_id": global_class_ids[i],
-                "bbox_x": round(max(0, orig_x + (orig_w_box/2)) / orig_w, 4),
-                "bbox_y": round(max(0, orig_y + (orig_h_box/2)) / orig_h, 4),
-                "bbox_w": round(min(orig_w, orig_w_box) / orig_w, 4),
-                "bbox_h": round(min(orig_h, orig_h_box) / orig_h, 4),
-                "confidence": round(global_scores[i], 4),
-                "low_conf": global_scores[i] < 0.60
+                "class_id": class_ids[i],
+                "bbox_x": round(max(0, x + (w/2)) / orig_w, 4), # Center X
+                "bbox_y": round(max(0, y + (h/2)) / orig_h, 4), # Center Y
+                "bbox_w": round(min(orig_w, w) / orig_w, 4),
+                "bbox_h": round(min(orig_h, h) / orig_h, 4),
+                "confidence": round(scores[i], 4),
+                "low_conf": scores[i] < 0.60
             }
             detections.append(det)
 
@@ -144,7 +148,11 @@ async def predict(file: UploadFile = File(...)):
     return JSONResponse({
         "status": "success",
         "inference_ms": inference_ms,
-        "slices_processed": len(slice_coords),
         "total_detections": len(detections),
-        "detections": detections
+        "detections": detections,
+        "skin_type": {
+            "p_dry": float(skin_probs[0]),
+            "p_balanced": float(skin_probs[1]),
+            "p_oily": float(skin_probs[2])
+        }
     })
