@@ -57,6 +57,7 @@ export default function RootLayout({
     <html lang="en" className={`${dmSans.variable} ${dmSerif.variable}`}>
       <body
         className={`${dmSans.className} bg-bg-base min-h-screen antialiased`}
+        suppressHydrationWarning
       >
         <Providers>{children}</Providers>
       </body>
