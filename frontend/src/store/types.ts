@@ -9,32 +9,32 @@ export interface User {
 }
 
 export interface Detection {
-  classId: number;
-  className: string;
-  bboxX: number;
-  bboxY: number;
-  bboxW: number;
-  bboxH: number;
+  class_id: number;
+  class_name: string;
+  bbox_x: number;
+  bbox_y: number;
+  bbox_w: number;
+  bbox_h: number;
   confidence: number;
-  lowConf: boolean;
+  low_conf: boolean;
 }
 
 export interface SkinTypeResult {
-  predictedLabel: string;
+  predicted_label: string;
   confidence: number;
-  lowConfidence: boolean;
-  signalSource: string;
-  fusedVector: { p_dry: number; p_balanced: number; p_oily: number };
-  cnnVector: { p_dry: number; p_balanced: number; p_oily: number } | null;
-  quesVector: { p_dry: number; p_balanced: number; p_oily: number } | null;
+  low_confidence: boolean;
+  signal_source: string;
+  fused_vector: { p_dry: number; p_balanced: number; p_oily: number };
+  cnn_vector: { p_dry: number; p_balanced: number; p_oily: number } | null;
+  ques_vector: { p_dry: number; p_balanced: number; p_oily: number } | null;
 }
 
 export interface EnvSnapshot {
   temperature: number | null;
   humidity: number | null;
-  uvIndex: number | null;
+  uv_index: number | null;
   pm25: number | null;
-  dataSource: string;
+  data_source: string;
 }
 
 export interface Ingredient {
@@ -42,35 +42,38 @@ export interface Ingredient {
   name: string;
   concentration: string | null;
   frequency: string;
-  startedAt: string;
-  discontinuedAt: string | null;
-  createdAt: string;
+  started_at: string;
+  discontinued_at: string | null;
+  created_at: string;
 }
 
 export interface CheckinResult {
-  checkinId: string;
-  severityGrade: 'Clear' | 'Mild' | 'Moderate' | 'Severe';
-  lesionSummary: {
+  checkin_id: string;
+  image_url: string | null;
+  captured_at: string;
+  severity_grade: 'Clear' | 'Mild' | 'Moderate' | 'Severe';
+  lesion_summary: {
     comedone: number;
     papule: number;
     pustule: number;
     nodule: number;
     total: number;
-    inflammatoryRatio: number;
+    inflammatory_ratio: number;
   };
   detections: Detection[];
-  skinTypeResult: SkinTypeResult;
-  envSnapshot: EnvSnapshot | null;
+  skin_type_result: SkinTypeResult;
+  env_snapshot: EnvSnapshot | null;
   observations: string[];
-  activeIngredients: Ingredient[];
+  active_ingredients: Ingredient[];
+  inference_ms: number;
 }
 
 export interface CheckinSummary {
   id: string;
-  capturedAt: string;
-  severityGrade: string;
-  thumbnailUrl: string | null;
-  lesionCounts: {
+  captured_at: string;
+  severity_grade: string;
+  thumbnail_url: string | null;
+  lesion_counts: {
     comedone: number;
     papule: number;
     pustule: number;

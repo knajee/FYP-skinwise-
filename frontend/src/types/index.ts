@@ -35,7 +35,7 @@ export interface SkinProfile {
 export interface EnvironmentalData {
   temperature: number;
   humidity: number;
-  uvIndex: number;
+  uv_index: number;
   pm25: number;
   city?: string;
   country?: string;
@@ -45,10 +45,10 @@ export interface EnvironmentalData {
 export interface CheckIn {
   id: string;
   date: string;
-  imageUrl: string;
+  image_url: string;
   annotatedImageUrl?: string;
   severity: SeverityGrade;
-  lesionCounts: Record<LesionClass, number>;
+  lesion_counts: Record<LesionClass, number>;
   skinProfile: SkinProfile;
   environmental: EnvironmentalData;
   observations: Observation[];
@@ -86,7 +86,7 @@ export interface User {
   avatarUrl?: string;
   skinProfile?: SkinProfile;
   onboardingComplete: boolean;
-  createdAt: string;
+  created_at: string;
 }
 
 // ─── Questionnaire ───

@@ -27,7 +27,7 @@ interface CheckinState {
 
 interface CheckinActions {
   setImageFile: (file: File, previewUrl: string) => void;
-  setExifData: (data: { capturedAt: string | null; lat: number | null; lng: number | null }) => void;
+  setExifData: (data: { captured_at: string | null; lat: number | null; lng: number | null }) => void;
   setGeolocation: (lat: number, lng: number) => void;
   setQualityGate: (gate: keyof ActiveCheckin['qualityGates'], value: boolean) => void;
   setQuestionnaireVector: (vector: { p_dry: number; p_balanced: number; p_oily: number }) => void;
@@ -74,7 +74,7 @@ export const useCheckinStore = create<CheckinStore>((set) => ({
     set((state) => ({
       activeCheckin: {
         ...state.activeCheckin,
-        exifCapturedAt: data.capturedAt,
+        exifCapturedAt: data.captured_at,
         exifLat: data.lat,
         exifLng: data.lng,
       },

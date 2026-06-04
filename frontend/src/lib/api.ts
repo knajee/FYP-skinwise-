@@ -38,7 +38,11 @@ async function fetcher<T>(endpoint: string, options: RequestInit = {}): Promise<
     let errorMessage = 'An error occurred';
     try {
       const errorData = await response.json();
-      errorMessage = errorData.detail || errorData.message || errorMessage;
+      if (Array.isArray(errorData.detail)) {
+        errorMessage = errorData.detail.map((e: any) => `${e.loc?.join('.') || 'Field'}: ${e.msg}`).join(', ');
+      } else {
+        errorMessage = errorData.detail || errorData.message || errorMessage;
+      }
     } catch {
       // Ignore JSON parse error if response is not JSON
     }
@@ -124,7 +128,7 @@ export const getIngredients = async (): Promise<Ingredient[]> => {
   });
 };
 
-export const addIngredient = async (ingredient: Omit<Ingredient, 'id' | 'createdAt' | 'discontinuedAt'>): Promise<Ingredient> => {
+export const addIngredient = async (ingredient: Omit<Ingredient, 'id' | 'created_at' | 'discontinued_at'>): Promise<Ingredient> => {
   return fetcher('/api/v1/ingredients', {
     method: 'POST',
     body: JSON.stringify(ingredient),
