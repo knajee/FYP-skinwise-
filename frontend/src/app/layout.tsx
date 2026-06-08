@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { DM_Serif_Display } from "next/font/google";
+import { DM_Sans, DM_Serif_Display } from "next/font/google";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-dm-sans",
+  display: "swap",
 });
 
 const dmSerif = DM_Serif_Display({
@@ -23,9 +18,8 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "SkinWISE — AI-Powered Skin Wellness Tracking",
-  description:
-    "Track your skin with the precision of a dermatology dashboard. AI-powered lesion detection, hybrid skin typing, and environmental correlation.",
+  title: "SkinWISE 2.0",
+  description: "AI-powered skincare wellness tracking",
   keywords: [
     "skincare",
     "AI",
@@ -42,11 +36,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className={`${dmSans.variable} ${dmSerif.variable}`}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${dmSerif.variable} antialiased`}
+        className={`${dmSans.className} bg-skin-cream min-h-screen antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
