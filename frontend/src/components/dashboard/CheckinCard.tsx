@@ -17,7 +17,7 @@ export default function CheckinCard({ checkin, onClick, onMouseEnter, isActive =
   // In a real scenario, this might come from the summary object if backend includes it.
   const hasEnvHint = false; 
 
-  const dateStr = new Date(checkin.capturedAt).toLocaleString(undefined, {
+  const dateStr = new Date(checkin.captured_at).toLocaleString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -38,9 +38,9 @@ export default function CheckinCard({ checkin, onClick, onMouseEnter, isActive =
     >
       {/* Thumbnail */}
       <div className="shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-bg-subtle flex items-center justify-center relative border border-border-default/50">
-        {checkin.thumbnailUrl ? (
+        {checkin.thumbnail_url ? (
           <Image 
-            src={checkin.thumbnailUrl} 
+            src={checkin.thumbnail_url} 
             alt="Check-in thumbnail" 
             fill 
             className="object-cover"
@@ -58,18 +58,18 @@ export default function CheckinCard({ checkin, onClick, onMouseEnter, isActive =
             <h3 className="font-display text-lg text-text-primary truncate">
               {dateStr}
             </h3>
-            <Badge grade={checkin.severityGrade as "Clear" | "Mild" | "Moderate" | "Severe"} className="shrink-0" />
+            <Badge grade={checkin.severity_grade as "Clear" | "Mild" | "Moderate" | "Severe"} className="shrink-0" />
           </div>
 
           {/* Lesion Chips */}
           <div className="flex flex-wrap items-center gap-2 mt-2">
-            <LesionChip label="C" count={checkin.lesionCounts.comedone} color="bg-slate-400" />
+            <LesionChip label="C" count={checkin.lesion_counts.comedone} color="bg-slate-400" />
             <span className="text-text-tertiary text-[10px]">•</span>
-            <LesionChip label="Pa" count={checkin.lesionCounts.papule} color="bg-blue-500" />
+            <LesionChip label="Pa" count={checkin.lesion_counts.papule} color="bg-blue-500" />
             <span className="text-text-tertiary text-[10px]">•</span>
-            <LesionChip label="Pu" count={checkin.lesionCounts.pustule} color="bg-yellow-500" />
+            <LesionChip label="Pu" count={checkin.lesion_counts.pustule} color="bg-yellow-500" />
             <span className="text-text-tertiary text-[10px]">•</span>
-            <LesionChip label="N" count={checkin.lesionCounts.nodule} color="bg-red-500" />
+            <LesionChip label="N" count={checkin.lesion_counts.nodule} color="bg-red-500" />
           </div>
         </div>
 

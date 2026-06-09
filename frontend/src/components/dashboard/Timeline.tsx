@@ -53,7 +53,7 @@ export default function Timeline() {
   // Group by month
   const grouped: Record<string, CheckinSummary[]> = {};
   checkins.forEach(c => {
-    const month = format(new Date(c.capturedAt), "MMMM yyyy");
+    const month = format(new Date(c.captured_at), "MMMM yyyy");
     if (!grouped[month]) grouped[month] = [];
     grouped[month].push(c);
   });

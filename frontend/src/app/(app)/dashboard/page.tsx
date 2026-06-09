@@ -1,295 +1,185 @@
 "use client";
 
-import {
-  Activity,
-  Droplets,
-  FlaskConical,
-  TrendingDown,
-  ChevronRight,
-  ArrowUpRight,
-  ArrowDownRight,
-} from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
-
-/* ─── Mock data ─── */
-const metrics = [
-  {
-    label: "Total Check-ins",
-    value: "12",
-    icon: Activity,
-    delta: "+2 this week",
-    deltaUp: true,
-  },
-  {
-    label: "Current Severity",
-    value: "Moderate",
-    icon: TrendingDown,
-    delta: "↓ 3 lesions vs last week",
-    deltaUp: false,
-    badgeClass: "badge-moderate",
-  },
-  {
-    label: "Skin Type",
-    value: "Balanced",
-    icon: Droplets,
-    delta: "72% confidence",
-    deltaUp: null,
-    badgeClass: "badge-skin-type",
-  },
-  {
-    label: "Active Ingredients",
-    value: "4",
-    icon: FlaskConical,
-    delta: "Niacinamide, Retinol +2",
-    deltaUp: null,
-  },
-];
-
-const recentCheckins = [
-  {
-    id: "1",
-    date: "April 14, 2026",
-    time: "9:42 AM",
-    severity: "moderate" as const,
-    lesions: { C: 8, Pa: 4, Pu: 2, N: 0 },
-  },
-  {
-    id: "2",
-    date: "April 10, 2026",
-    time: "8:15 AM",
-    severity: "mild" as const,
-    lesions: { C: 5, Pa: 2, Pu: 1, N: 0 },
-  },
-  {
-    id: "3",
-    date: "April 3, 2026",
-    time: "7:30 PM",
-    severity: "moderate" as const,
-    lesions: { C: 10, Pa: 5, Pu: 3, N: 1 },
-  },
-];
-
-const severityStyles = {
-  clear: "badge-clear",
-  mild: "badge-mild",
-  moderate: "badge-moderate",
-  severe: "badge-severe",
-};
-
-/* ─── Trend chart placeholder (SVG) ─── */
-function TrendChartPlaceholder() {
-  return (
-    <div className="w-full h-48 flex items-end gap-1 px-4 pb-4">
-      {[30, 45, 38, 52, 40, 35, 28, 42, 36, 25, 30, 22].map((v, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-          <div
-            className="w-full bg-accent/20 rounded-t transition-all hover:bg-accent/40"
-            style={{ height: `${v * 2.5}px` }}
-          />
-          <span className="text-[9px] font-mono text-slate-600">
-            {["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][i]}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
+import { useRouter } from "next/navigation";
+import { Camera, FlaskConical, ChevronRight } from "lucide-react";
+import Timeline from "@/components/dashboard/Timeline";
+import LesionTrendChart from "@/components/dashboard/LesionTrendChart";
+import SeverityTimeline from "@/components/dashboard/SeverityTimeline";
+import { useAuthStore, useIngredientsStore } from "@/store";
+import { useTrendData, useCheckins } from "@/hooks/useCheckins";
+import { ROUTES } from "@/lib/routes";
+import SkeletonTrendChart from "@/components/ui/skeletons/SkeletonTrendChart";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const user = useAuthStore(s => s.user);
+  const { ingredients } = useIngredientsStore();
+  const { trendData, totalCheckins, mostRecent } = useTrendData();
+  const { data, isLoading } = useCheckins(1);
+  const checkins = data?.checkins || [];
+
+  const [dateRange, setDateRange] = useState<"30" | "90" | "all">("30");
+
+  const filterDataByRange = () => {
+    if (dateRange === "all") return trendData;
+    const days = parseInt(dateRange);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    return trendData.filter(d => new Date(d.date) >= cutoff);
+  };
+
+  const filteredTrendData = filterDataByRange();
+  const active_ingredientsCount = ingredients.filter(i => !i.discontinued_at).length;
+  
+  // Basic stats logic
+  let mostCommonLesion = "None";
+  if (totalCheckins > 0) {
+    const sums = { comedone: 0, papule: 0, pustule: 0, nodule: 0 };
+    trendData.forEach(d => {
+      sums.comedone += d.comedone;
+      sums.papule += d.papule;
+      sums.pustule += d.pustule;
+      sums.nodule += d.nodule;
+    });
+    const max = Object.entries(sums).reduce((a, b) => a[1] > b[1] ? a : b);
+    if (max[1] > 0) mostCommonLesion = max[0].charAt(0).toUpperCase() + max[0].slice(1);
+  }
+
   return (
-    <div className="max-w-container mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-section text-white">Dashboard</h1>
-        <p className="text-xs-body text-slate-400 mt-1">
-          Your skin health at a glance
+    <div className="space-y-6 md:space-y-8">
+      {/* Greeting Section */}
+      <div className="mb-8">
+        <h1 className="font-display text-3xl md:text-4xl text-text-primary mb-2">
+          Good morning, {user?.email ? user.email.split('@')[0] : 'there'}!
+        </h1>
+        <p className="text-sm font-medium text-text-tertiary">
+          {totalCheckins} check-ins tracked · Skin type: {user?.skinTypeConfirmed || user?.skinTypePredicted || "Unknown"}
         </p>
       </div>
 
-      {/* Metrics row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((m) => (
-          <div key={m.label} className="card-surface-1 p-5">
-            <div className="flex items-start justify-between mb-3">
-              <span className="text-xs-body text-slate-400">{m.label}</span>
-              <m.icon size={16} className="text-slate-500" />
-            </div>
-            <div
-              className={`font-display text-[36px] leading-none text-white mb-2 ${
-                m.badgeClass ? "" : ""
-              }`}
-            >
-              {m.value}
-            </div>
-            <div className="flex items-center gap-1">
-              {m.deltaUp === true && (
-                <ArrowUpRight size={12} className="text-emerald-400" />
-              )}
-              {m.deltaUp === false && (
-                <ArrowDownRight size={12} className="text-emerald-400" />
-              )}
-              <span
-                className={`text-micro ${
-                  m.deltaUp === false
-                    ? "text-emerald-400"
-                    : m.deltaUp === true
-                    ? "text-emerald-400"
-                    : "text-slate-500"
-                }`}
-              >
-                {m.delta}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Trend chart */}
-      <div className="card-surface-1 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-card-header font-display text-white">
-            Lesion Trend
-          </h2>
-          <div className="flex gap-2">
-            {["All", "Comedone", "Papule", "Pustule", "Nodule"].map(
-              (label, i) => (
-                <button
-                  key={label}
-                  className={`text-micro font-mono px-2.5 py-1 rounded-full transition-colors ${
-                    i === 0
-                      ? "bg-accent/10 text-accent"
-                      : "text-slate-500 hover:text-slate-300"
-                  }`}
-                >
-                  {label}
-                </button>
-              )
-            )}
-          </div>
+      {/* Onboarding Prompts */}
+      {!user?.hasCompletedQuestionnaire && (
+        <div className="bg-severity-moderate/10 border border-severity-moderate/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <p className="text-sm text-severity-moderate font-medium">
+            Complete your skin profile for more accurate results
+          </p>
+          <Link 
+            href={ROUTES.QUESTIONNAIRE}
+            className="shrink-0 text-xs font-semibold bg-white text-severity-moderate px-3 py-1.5 rounded-full border border-severity-moderate/20 hover:bg-severity-moderate/5 transition-colors"
+          >
+            Complete Profile →
+          </Link>
         </div>
-        <TrendChartPlaceholder />
-        {/* Severity timeline dots */}
-        <div className="flex items-center gap-2 mt-4 px-4">
-          {[
-            "emerald",
-            "amber",
-            "amber",
-            "orange",
-            "orange",
-            "amber",
-            "amber",
-            "orange",
-            "amber",
-            "emerald",
-            "amber",
-            "amber",
-          ].map((color, i) => (
-            <div
-              key={i}
-              className={`flex-1 h-2 rounded-full ${
-                color === "emerald"
-                  ? "bg-emerald-500"
-                  : color === "amber"
-                  ? "bg-amber-500"
-                  : "bg-orange-500"
-              }`}
-              title={`Check-in ${i + 1}`}
-            />
-          ))}
-        </div>
-      </div>
+      )}
 
-      {/* Bottom grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent check-ins */}
-        <div className="card-surface-1 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-card-header font-display text-white">
-              Recent Check-Ins
-            </h2>
-            <Link
-              href="/history"
-              className="text-xs-body text-accent hover:underline flex items-center gap-1"
-            >
-              View all <ChevronRight size={14} />
-            </Link>
+      {totalCheckins === 0 && user?.hasCompletedQuestionnaire && (
+        <div className="bg-bg-surface border border-border-default rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 rounded-full bg-bg-subtle flex items-center justify-center mb-4">
+            <Camera size={32} className="text-text-tertiary" />
           </div>
-          <div className="space-y-3">
-            {recentCheckins.map((c) => (
-              <Link
-                key={c.id}
-                href={`/results/${c.id}`}
-                className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/[0.02] transition-colors group border-l-4 border-transparent hover:border-accent"
-              >
-                {/* Thumbnail placeholder */}
-                <div className="w-14 h-14 rounded-lg bg-surface-2 flex-shrink-0 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs-body font-mono text-slate-300">
-                      {c.date}
-                    </span>
-                    <span className="text-micro text-slate-500">{c.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`${severityStyles[c.severity]} text-micro font-mono px-2 py-0.5 rounded`}
+          <h2 className="font-display text-2xl text-text-primary mb-2">Begin your first check-in</h2>
+          <p className="text-sm text-text-tertiary max-w-sm mb-6">
+            Take a photo of your skin to establish your baseline and start tracking changes over time.
+          </p>
+          <button
+            onClick={() => router.push(ROUTES.CHECK_IN)}
+            className="h-12 px-8 rounded-full bg-accent text-text-primary font-medium hover:bg-accent/90 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+          >
+            Start Check-In
+          </button>
+        </div>
+      )}
+
+      {/* Main Layout Grid */}
+      {totalCheckins > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Left Column (Timeline) - 60% on desktop */}
+          <div className="lg:col-span-7 order-2 lg:order-1">
+            <Timeline />
+          </div>
+
+          {/* Right Column (Summary Cards) - 40% on desktop */}
+          <div className="lg:col-span-5 order-1 lg:order-2 space-y-6">
+            
+            {/* Trend Card */}
+            <div className="glass-panel p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-text-primary">Lesion Trend</h3>
+                
+                {/* Tab Group */}
+                <div className="flex bg-bg-surface rounded-lg p-0.5 border border-border-default">
+                  {(["30", "90", "all"] as const).map(range => (
+                    <button
+                      key={range}
+                      onClick={() => setDateRange(range)}
+                      className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                        dateRange === range ? "bg-white shadow-sm text-text-primary" : "text-text-tertiary hover:text-text-primary"
+                      }`}
                     >
-                      {c.severity.toUpperCase()}
-                    </span>
-                    <span className="text-micro font-mono text-slate-500">
-                      C{c.lesions.C} · Pa{c.lesions.Pa} · Pu{c.lesions.Pu} · N
-                      {c.lesions.N}
-                    </span>
-                  </div>
+                      {range === "all" ? "All time" : `${range}d`}
+                    </button>
+                  ))}
                 </div>
-                <ChevronRight
-                  size={16}
-                  className="text-slate-600 group-hover:text-accent transition-colors"
-                />
-              </Link>
-            ))}
-          </div>
-        </div>
+              </div>
+              
+              {isLoading ? (
+                <SkeletonTrendChart />
+              ) : (
+                <LesionTrendChart data={filteredTrendData} compact />
+              )}
+            </div>
 
-        {/* Ingredient efficacy (locked) */}
-        <div className="card-surface-1 p-6 relative overflow-hidden">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-card-header font-display text-white">
-              Ingredient Efficacy
-            </h2>
-            <span className="text-micro font-mono bg-surface-2 text-slate-400 px-2.5 py-1 rounded-full">
-              Coming in Phase 2
-            </span>
-          </div>
-          {/* Blurred preview */}
-          <div className="space-y-3 blur-[2px] opacity-50 pointer-events-none">
-            {["Niacinamide", "Retinol", "Salicylic Acid", "Hyaluronic Acid"].map(
-              (name) => (
-                <div
-                  key={name}
-                  className="flex items-center justify-between p-3 bg-surface-2 rounded-lg"
-                >
-                  <span className="text-body text-white">{name}</span>
-                  <div className="w-24 h-2 bg-accent/20 rounded-full">
-                    <div
-                      className="h-full bg-accent rounded-full"
-                      style={{ width: `${40 + Math.random() * 40}%` }}
-                    />
-                  </div>
+            {/* Severity Timeline */}
+            <SeverityTimeline checkins={checkins} />
+
+            {/* Quick Stats */}
+            <div className="glass-panel p-5 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-[10px] text-text-tertiary font-medium uppercase tracking-wider mb-1">Total</p>
+                <p className="font-display text-xl text-text-primary">{totalCheckins}</p>
+              </div>
+              <div className="border-x border-border-default">
+                <p className="text-[10px] text-text-tertiary font-medium uppercase tracking-wider mb-1">Common</p>
+                <p className="font-display text-xl text-text-primary">{mostCommonLesion}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-text-tertiary font-medium uppercase tracking-wider mb-1">Recent</p>
+                <p className="font-display text-xl text-text-primary">{mostRecent?.severity_grade || "—"}</p>
+              </div>
+            </div>
+
+            {/* Ingredients Link */}
+            <Link 
+              href={ROUTES.INGREDIENTS}
+              className="flex items-center justify-between p-5 glass-panel hover:bg-bg-subtle/50 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-bg-surface border border-border-default flex items-center justify-center group-hover:bg-white transition-colors">
+                  <FlaskConical size={20} className="text-text-primary" />
                 </div>
-              )
-            )}
-          </div>
-          {/* Lock overlay */}
-          <div className="absolute inset-0 flex items-center justify-center bg-surface-1/60 backdrop-blur-[1px]">
-            <p className="text-body text-slate-400 text-center max-w-xs px-6">
-              Ingredient efficacy scoring unlocks after 4 weeks of tracking.
-            </p>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">Active Ingredients</p>
+                  <p className="text-xs text-text-tertiary">{active_ingredientsCount} logged products</p>
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-text-tertiary group-hover:text-text-primary transition-colors" />
+            </Link>
+
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Mobile FAB */}
+      <button 
+        onClick={() => router.push(ROUTES.CHECK_IN)}
+        className="md:hidden fixed bottom-[88px] right-4 z-40 w-14 h-14 rounded-full bg-brand text-text-inverse flex items-center justify-center shadow-xl hover:bg-brand/90 transition-transform active:scale-95"
+        aria-label="New Check-In"
+      >
+        <Camera size={24} />
+      </button>
     </div>
   );
 }

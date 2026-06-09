@@ -20,7 +20,7 @@ export default function SeverityTimeline({ checkins }: SeverityTimelineProps) {
 
   // Show last 20 chronologically (store might have reverse-chronological, so we reverse it)
   const displayCheckins = [...checkins]
-    .sort((a, b) => new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime())
+    .sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime())
     .slice(-20);
 
   return (
@@ -36,7 +36,7 @@ export default function SeverityTimeline({ checkins }: SeverityTimelineProps) {
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {displayCheckins.map((checkin) => {
-          const color = SEVERITY_COLORS[checkin.severityGrade as keyof typeof SEVERITY_COLORS] || "var(--text-tertiary)";
+          const color = SEVERITY_COLORS[checkin.severity_grade as keyof typeof SEVERITY_COLORS] || "var(--text-tertiary)";
           
           return (
             <div 
@@ -48,12 +48,12 @@ export default function SeverityTimeline({ checkins }: SeverityTimelineProps) {
                 style={{ backgroundColor: color }}
               />
               <span className="text-[9px] font-medium text-text-tertiary">
-                {format(new Date(checkin.capturedAt), "d MMM")}
+                {format(new Date(checkin.captured_at), "d MMM")}
               </span>
 
               {/* Tooltip */}
               <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 w-max bg-brand text-text-inverse text-[10px] py-1 px-2 rounded whitespace-nowrap shadow-lg">
-                <span className="font-semibold">{checkin.severityGrade}</span> · {checkin.lesionCounts.total} lesions
+                <span className="font-semibold">{checkin.severity_grade}</span> · {checkin.lesion_counts.total} lesions
               </div>
             </div>
           );

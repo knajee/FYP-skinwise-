@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 interface ObservationsPanelProps {
   observations: string[];
-  activeIngredients: Ingredient[];
+  active_ingredients: Ingredient[];
 }
 
 const PROHIBITED_WORDS = [
@@ -20,7 +20,7 @@ function checkProhibitedVocab(text: string): boolean {
   return PROHIBITED_WORDS.some(word => lowerText.includes(word));
 }
 
-export default function ObservationsPanel({ observations, activeIngredients }: ObservationsPanelProps) {
+export default function ObservationsPanel({ observations, active_ingredients }: ObservationsPanelProps) {
   const [expanded, setExpanded] = useState<Record<number, boolean>>({ 0: true, 1: true });
 
   const toggleExpand = (index: number) => {
@@ -82,11 +82,11 @@ export default function ObservationsPanel({ observations, activeIngredients }: O
       <div className="border-t border-border-default pt-6">
         <h3 className="text-sm font-medium text-text-tertiary mb-3 uppercase tracking-wider">Active at time of check-in</h3>
         
-        {activeIngredients.length === 0 ? (
+        {active_ingredients.length === 0 ? (
           <p className="text-sm text-text-tertiary italic">No ingredients logged — add your skincare routine to track efficacy.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {activeIngredients.map((ing) => (
+            {active_ingredients.map((ing) => (
               <span key={ing.id} className="inline-flex items-center px-3 py-1.5 rounded-full bg-bg-subtle border border-skin-muted/20 text-xs font-medium text-text-primary">
                 {ing.name} {ing.concentration ? `(${ing.concentration})` : ""}
               </span>

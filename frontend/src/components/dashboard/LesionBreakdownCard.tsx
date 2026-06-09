@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import type { CheckinResult } from "@/store/types";
 
 interface LesionBreakdownCardProps {
-  summary: CheckinResult['lesionSummary'];
+  summary: CheckinResult['lesion_summary'];
 }
 
 export default function LesionBreakdownCard({ summary }: LesionBreakdownCardProps) {
@@ -17,7 +17,7 @@ export default function LesionBreakdownCard({ summary }: LesionBreakdownCardProp
     );
   }
 
-  const inflammatoryRatioPct = (summary.inflammatoryRatio * 100).toFixed(0);
+  const inflammatory_ratioPct = (summary.inflammatory_ratio * 100).toFixed(0);
 
   return (
     <div className="glass-panel p-6 mt-4 animate-fade-in-up">
@@ -66,12 +66,12 @@ export default function LesionBreakdownCard({ summary }: LesionBreakdownCardProp
             <span className="font-medium text-text-primary cursor-help underline decoration-dotted decoration-skin-muted underline-offset-2">
               Inflammatory burden
             </span>
-            <span className="font-semibold text-severity-severe">{inflammatoryRatioPct}%</span>
+            <span className="font-semibold text-severity-severe">{inflammatory_ratioPct}%</span>
           </div>
           <div className="h-2 w-full bg-border-default rounded-full overflow-hidden">
             <div 
               className="h-full bg-severity-severe transition-all duration-1000 ease-out" 
-              style={{ width: `${inflammatoryRatioPct}%` }}
+              style={{ width: `${inflammatory_ratioPct}%` }}
             />
           </div>
         </div>

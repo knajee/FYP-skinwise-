@@ -62,7 +62,7 @@ export default function OnboardingPage() {
                 className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-500 ${
                   type === result
                     ? "bg-accent/20 text-accent border border-accent/30 shadow-glow-teal scale-110"
-                    : "bg-surface-2 text-slate-500 border border-transparent"
+                    : "bg-surface-2 text-text-tertiary border border-transparent"
                 }`}
                 style={{ animationDelay: `${i * 200}ms` }}
               >
@@ -71,10 +71,10 @@ export default function OnboardingPage() {
             ))}
           </div>
 
-          <h1 className="font-display text-[28px] text-white mb-3">
+          <h1 className="font-display text-[28px] text-text-primary mb-3">
             Your skin profile is ready.
           </h1>
-          <p className="text-body text-slate-400 mb-8">
+          <p className="text-[0.9375rem] text-text-secondary mb-8">
             Combined with your check-in image, this gives us a more accurate
             estimate.
           </p>
@@ -100,10 +100,10 @@ export default function OnboardingPage() {
           style={{ width: `${progress}%` }}
         />
         <div className="max-w-[600px] mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="font-display text-lg text-white">
+          <Link href="/" className="font-display text-lg text-text-primary">
             SkinWISE
           </Link>
-          <span className="text-micro font-mono text-slate-500">
+          <span className="text-xs font-mono text-text-tertiary">
             Question {currentQ + 1} of {SKIN_QUESTIONS.length}
           </span>
         </div>
@@ -112,10 +112,10 @@ export default function OnboardingPage() {
       {/* Question card */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="max-w-[600px] w-full card-surface-1 p-8 animate-fade-in-up">
-          <div className="text-micro font-mono text-accent uppercase tracking-wider mb-4">
+          <div className="text-xs font-mono text-accent uppercase tracking-wider mb-4">
             Q{currentQ + 1} / {question.category}
           </div>
-          <h2 className="font-display text-card-header text-white mb-6">
+          <h2 className="font-display text-2xl text-text-primary mb-6">
             {question.text}
           </h2>
 
@@ -129,8 +129,8 @@ export default function OnboardingPage() {
                   onClick={() => selectAnswer(opt.value)}
                   className={`w-full flex items-center justify-between px-5 py-3.5 rounded-lg text-left text-sm transition-all duration-150 ${
                     selected
-                      ? "bg-accent/[0.08] border border-teal-500 text-white"
-                      : "bg-surface-2 border border-transparent text-slate-300 hover:border-white/10 hover:bg-surface-3"
+                      ? "bg-accent/[0.08] border border-teal-500 text-text-primary"
+                      : "bg-surface-2 border border-transparent text-text-secondary hover:border-white/10 hover:bg-surface-3"
                   }`}
                 >
                   <span>{opt.label}</span>
@@ -147,7 +147,7 @@ export default function OnboardingPage() {
             <button
               onClick={goBack}
               disabled={currentQ === 0}
-              className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ArrowLeft size={16} />
               Back

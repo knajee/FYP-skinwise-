@@ -11,7 +11,7 @@ export const ROUTES = {
 
   // ─── Authenticated ───
   DASHBOARD: "/dashboard",
-  CHECK_IN: "/check-in",
+  CHECK_IN: "/checkin",
   HISTORY: "/history",
   ANALYTICS: "/analytics",
   INGREDIENTS: "/ingredients",
@@ -25,7 +25,7 @@ export const ROUTES = {
 /** Routes that require authentication */
 export const PROTECTED_ROUTES = [
   "/dashboard",
-  "/check-in",
+  "/checkin",
   "/history",
   "/analytics",
   "/ingredients",

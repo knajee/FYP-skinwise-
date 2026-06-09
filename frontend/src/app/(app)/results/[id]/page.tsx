@@ -1,55 +1,139 @@
 "use client";
 
-import { useState } from "react";
-import { Share2, Download, ChevronDown, Pencil } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  Share2, Download, ChevronDown, Loader2, ArrowLeft,
+  Thermometer, Droplets, Sun, Wind,
+} from "lucide-react";
+import dynamic from "next/dynamic";
 
-/* Mock data for demo */
-const mockResult = {
-  date: "April 14, 2026",
-  severity: "moderate" as const,
-  lesions: { comedone: 8, papule: 4, pustule: 2, nodule: 0 },
-  skinType: { type: "Balanced", confidence: 72, imageScore: 0.61, questionnaireScore: 0.78 },
-  env: { temp: "32°C", humidity: "68%", uv: "5.2", pm25: "42µg/m³", datetime: "Apr 14, 2026 · 9:42 AM" },
-  observations: [
-    { text: "Elevated UV exposure may increase post-inflammatory hyperpigmentation risk.", detail: "UV Index above 5 correlates with slower lesion healing.", citation: "AAD UV Guidelines, 2019" },
-    { text: "Humidity above 60% may increase sebum production in oily zones.", detail: "Consider lightweight, non-comedogenic moisturizer.", citation: "Br J Dermatol, 2017" },
-  ],
-};
+import { getCheckinDetail } from "@/lib/api";
+import { useAuthStore } from "@/store";
+import { ROUTES } from "@/lib/routes";
+import { env } from "@/lib/env";
+import type { CheckinResult, Detection } from "@/store/types";
+
+import SkinTypeResultCard from "@/components/skintype/SkinTypeResultCard";
+
+const AnnotatedImage = dynamic(() => import("@/components/dashboard/AnnotatedImage"), { ssr: false });
 
 const lesionMeta = [
-  { key: "comedone", abbr: "C", label: "Comedone", color: "#CBD5E1" },
-  { key: "papule", abbr: "Pa", label: "Papule", color: "#FBBF24" },
-  { key: "pustule", abbr: "Pu", label: "Pustule", color: "#F97316" },
-  { key: "nodule", abbr: "N", label: "Nodule", color: "#F43F5E" },
+  { key: "comedone", abbr: "C", label: "Comedone", color: "#94A3B8" },
+  { key: "papule", abbr: "Pa", label: "Papule", color: "#3B82F6" },
+  { key: "pustule", abbr: "Pu", label: "Pustule", color: "#EAB308" },
+  { key: "nodule", abbr: "N", label: "Nodule", color: "#EF4444" },
 ];
 
-const severityStyles: Record<string, string> = {
-  clear: "badge-clear",
-  mild: "badge-mild",
-  moderate: "badge-moderate",
-  severe: "badge-severe",
+const severityConfig: Record<string, { bg: string; text: string; border: string }> = {
+  Clear:    { bg: "bg-accent/10",             text: "text-accent",            border: "border-accent/20" },
+  Mild:     { bg: "bg-severity-mild/10",      text: "text-severity-mild",     border: "border-severity-mild/20" },
+  Moderate: { bg: "bg-severity-moderate/10",  text: "text-severity-moderate", border: "border-severity-moderate/20" },
+  Severe:   { bg: "bg-severity-severe/10",    text: "text-severity-severe",   border: "border-severity-severe/20" },
 };
 
 export default function ResultsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+
+  const [result, setResult] = useState<CheckinResult | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAnnotations, setShowAnnotations] = useState(true);
-  const [showFusionDetail, setShowFusionDetail] = useState(false);
-  const r = mockResult;
+
+  const checkin_id = params.id as string;
+
+  useEffect(() => {
+    if (!checkin_id) return;
+
+    const fetchResult = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await getCheckinDetail(checkin_id);
+        setResult(data);
+      } catch (err: unknown) {
+        const apiErr = err as { message?: string };
+        setError(apiErr.message || "Failed to load check-in details.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchResult();
+  }, [checkin_id]);
+
+  /* ─── Loading State ─── */
+  if (isLoading) {
+    return (
+      <div className="max-w-container mx-auto flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={32} className="animate-spin text-accent" />
+          <p className="text-sm text-text-tertiary font-medium">Loading check-in results...</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Error State ─── */
+  if (error || !result) {
+    return (
+      <div className="max-w-container mx-auto flex items-center justify-center min-h-[60vh]">
+        <div className="glass-panel p-8 text-center max-w-md">
+          <h2 className="font-display text-2xl text-text-primary mb-2">Could not load results</h2>
+          <p className="text-sm text-text-tertiary mb-6">{error || "Check-in not found."}</p>
+          <button
+            onClick={() => router.push(ROUTES.DASHBOARD)}
+            className="h-11 px-6 rounded-card bg-brand text-text-inverse text-sm font-medium hover:bg-brand/90 transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Derived values ─── */
+  const s = result.lesion_summary;
+  const sev = severityConfig[result.severity_grade] || severityConfig.Moderate;
+  const capturedDate = new Date(result.captured_at).toLocaleString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  // Build image_url — resolve relative paths against the backend
+  const image_url = result.image_url
+    ? result.image_url.startsWith("http")
+      ? result.image_url
+      : `${env.apiUrl}${result.image_url}`
+    : null;
 
   return (
     <div className="max-w-container mx-auto">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2 text-xs-body text-slate-400">
-          <Link href="/history" className="hover:text-white transition-colors">History</Link>
+        <div className="flex items-center gap-2 text-sm text-text-tertiary">
+          <button
+            onClick={() => router.push(ROUTES.DASHBOARD)}
+            className="flex items-center gap-1 hover:text-text-primary transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Dashboard
+          </button>
           <span>/</span>
-          <span className="text-white">{r.date}</span>
+          <span className="text-text-primary">{capturedDate}</span>
         </div>
         <div className="flex gap-2">
-          <button className="p-2 text-slate-400 hover:text-white transition-colors" aria-label="Share">
+          <button className="p-2 text-text-tertiary hover:text-text-primary transition-colors" aria-label="Share">
             <Share2 size={16} />
           </button>
-          <button className="p-2 text-slate-400 hover:text-white transition-colors" aria-label="Download">
+          <button className="p-2 text-text-tertiary hover:text-text-primary transition-colors" aria-label="Download">
             <Download size={16} />
           </button>
         </div>
@@ -58,41 +142,32 @@ export default function ResultsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* LEFT: Image + Annotations */}
         <div className="space-y-4">
-          {/* Annotated image */}
-          <div className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-surface-2 animate-scale-in">
-            <svg viewBox="0 0 640 480" className="w-full" fill="none">
-              <rect width="640" height="480" fill="#13151F" />
-              <ellipse cx="320" cy="220" rx="140" ry="170" stroke="#1E293B" strokeWidth="1" fill="#0F1117" />
-              {showAnnotations && (
-                <>
-                  {/* Comedone boxes */}
-                  <rect x="250" y="130" width="35" height="35" rx="4" stroke="#CBD5E1" strokeWidth="2" />
-                  <rect x="350" y="140" width="30" height="30" rx="4" stroke="#CBD5E1" strokeWidth="2" />
-                  <rect x="280" y="100" width="25" height="25" rx="4" stroke="#CBD5E1" strokeWidth="2" />
-                  <rect x="370" y="110" width="28" height="28" rx="4" stroke="#CBD5E1" strokeWidth="2" />
-                  {/* Papule boxes */}
-                  <rect x="290" y="210" width="40" height="35" rx="4" stroke="#FBBF24" strokeWidth="2" />
-                  <rect x="340" y="230" width="32" height="30" rx="4" stroke="#FBBF24" strokeWidth="2" />
-                  <rect x="260" y="260" width="30" height="28" rx="4" stroke="#FBBF24" strokeWidth="2" />
-                  {/* Pustule boxes */}
-                  <rect x="310" y="280" width="38" height="35" rx="4" stroke="#F97316" strokeWidth="2" />
-                  <rect x="355" y="190" width="28" height="28" rx="4" stroke="#F97316" strokeWidth="2" strokeDasharray="6 3" />
-                  <text x="387" y="195" fill="#F97316" fontSize="12" fontWeight="bold">?</text>
-                </>
-              )}
-            </svg>
-          </div>
+          {/* Annotated Image from real detections */}
+          {image_url ? (
+            <AnnotatedImage
+              image_url={image_url}
+              detections={showAnnotations ? result.detections : []}
+              isLoading={false}
+            />
+          ) : (
+            <div className="aspect-square rounded-card bg-bg-subtle flex items-center justify-center">
+              <p className="text-sm text-text-tertiary">Image not available</p>
+            </div>
+          )}
 
-          {/* Legend */}
+          {/* Lesion Legend */}
           <div className="flex items-center gap-3 flex-wrap">
-            {lesionMeta.map((l) => (
-              <div key={l.key} className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: l.color }} />
-                <span className="text-micro font-mono text-slate-400" title={l.label}>
-                  {l.abbr} {r.lesions[l.key as keyof typeof r.lesions]}
-                </span>
-              </div>
-            ))}
+            {lesionMeta.map((l) => {
+              const count = s[l.key as keyof typeof s] as number;
+              return (
+                <div key={l.key} className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: l.color }} />
+                  <span className="text-xs font-medium text-text-tertiary">
+                    {l.abbr} {count}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Annotations toggle */}
@@ -100,29 +175,33 @@ export default function ResultsPage() {
             <button
               onClick={() => setShowAnnotations(!showAnnotations)}
               className={`relative w-9 h-5 rounded-full transition-colors ${
-                showAnnotations ? "bg-accent" : "bg-white/10"
+                showAnnotations ? "bg-accent" : "bg-bg-subtle border border-border-default"
               }`}
               role="switch"
               aria-checked={showAnnotations}
               aria-label="Show annotations"
             >
-              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                showAnnotations ? "left-[18px]" : "left-0.5"
-              }`} />
+              <span
+                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                  showAnnotations ? "left-[18px]" : "left-0.5"
+                }`}
+              />
             </button>
-            <span className="text-xs-body text-slate-400">Show annotations</span>
+            <span className="text-sm text-text-tertiary">Show annotations</span>
           </div>
 
           {/* Severity badge */}
           <div className="flex justify-center">
-            <span className={`${severityStyles[r.severity]} text-sm font-mono uppercase px-4 py-2 rounded-lg`}>
-              {r.severity}
+            <span
+              className={`${sev.bg} ${sev.text} ${sev.border} border text-sm font-medium uppercase px-4 py-2 rounded-lg tracking-wider`}
+            >
+              {result.severity_grade}
             </span>
           </div>
 
           {/* Disclaimer */}
-          <div className="card-surface-2 p-4">
-            <p className="text-micro italic text-slate-400">
+          <div className="glass-panel p-4">
+            <p className="text-xs italic text-text-tertiary">
               This severity grading is a wellness estimate based on detected lesions — not a clinical assessment.
             </p>
           </div>
@@ -130,96 +209,104 @@ export default function ResultsPage() {
 
         {/* RIGHT: Insight Cards */}
         <div className="space-y-4">
-          {/* Skin Profile */}
-          <div className="card-surface-1 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-card-header font-display text-white">Skin Profile</h3>
-              <button className="text-slate-400 hover:text-white transition-colors" aria-label="Edit">
-                <Pencil size={14} />
-              </button>
-            </div>
-            <p className="font-display text-section text-white mb-3">{r.skinType.type}</p>
-            <div className="mb-2">
-              <div className="w-full h-1 bg-white/[0.06] rounded-full overflow-hidden">
-                <div className="h-full bg-accent rounded-full transition-all duration-700" style={{ width: `${r.skinType.confidence}%` }} />
-              </div>
-              <p className="text-micro font-mono text-slate-500 mt-1">{r.skinType.confidence}% confidence</p>
-            </div>
-            <button
-              onClick={() => setShowFusionDetail(!showFusionDetail)}
-              className="flex items-center gap-1 text-micro text-slate-400 hover:text-white transition-colors"
-            >
-              How we estimated this
-              <ChevronDown size={12} className={`transition-transform ${showFusionDetail ? "rotate-180" : ""}`} />
-            </button>
-            {showFusionDetail && (
-              <div className="mt-3 space-y-2 animate-fade-in">
-                <div className="flex items-center justify-between text-xs-body">
-                  <span className="text-slate-400">Image signal: Balanced</span>
-                  <span className="font-mono text-slate-500">{r.skinType.imageScore}</span>
-                </div>
-                <div className="w-full h-1 bg-white/[0.06] rounded-full"><div className="h-full bg-accent/60 rounded-full" style={{ width: `${r.skinType.imageScore * 100}%` }} /></div>
-                <div className="flex items-center justify-between text-xs-body">
-                  <span className="text-slate-400">Questionnaire signal: Balanced</span>
-                  <span className="font-mono text-slate-500">{r.skinType.questionnaireScore}</span>
-                </div>
-                <div className="w-full h-1 bg-white/[0.06] rounded-full"><div className="h-full bg-accent/60 rounded-full" style={{ width: `${r.skinType.questionnaireScore * 100}%` }} /></div>
-              </div>
-            )}
-            <p className="text-micro font-mono text-slate-500 mt-3">Fusion · Image + Questionnaire</p>
-          </div>
+          {/* Skin Profile (Real Data) */}
+          <SkinTypeResultCard
+            result={result.skin_type_result}
+            confirmedLabel={user?.skinTypeConfirmed || null}
+          />
 
           {/* Environmental Snapshot */}
-          <div className="card-surface-1 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-card-header font-display text-white">Conditions at capture</h3>
-              <span className="text-micro text-slate-500">{r.env.datetime}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { icon: "🌡", value: r.env.temp, label: "Temperature" },
-                { icon: "💧", value: r.env.humidity, label: "Humidity" },
-                { icon: "☀", value: r.env.uv, label: "UV Index", warn: true },
-                { icon: "🌫", value: r.env.pm25, label: "PM2.5" },
-              ].map((m) => (
-                <div key={m.label} className="card-surface-2 p-4 text-center">
-                  <div className="text-lg mb-1">{m.icon}</div>
-                  <div className={`font-display text-card-header ${m.warn ? "text-amber-400" : "text-white"}`}>{m.value}</div>
-                  <div className="text-micro text-slate-400">{m.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Insights */}
-          <div className="card-surface-1 p-6">
-            <h3 className="text-card-header font-display text-white mb-4">Insights</h3>
-            <div className="space-y-4">
-              {r.observations.map((obs, i) => (
-                <div key={i} className="flex gap-3 border-l-2 border-accent pl-4">
-                  <div>
-                    <p className="text-sm text-white">{obs.text}</p>
-                    <p className="text-xs-body text-slate-400 mt-1">{obs.detail}</p>
-                    <span className="text-[10px] font-mono text-slate-500 mt-1 inline-block">[{obs.citation}]</span>
+          {result.env_snapshot && (
+            <section className="glass-panel p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                  Conditions at Capture
+                </h3>
+                <span className="text-xs text-text-tertiary">{capturedDate}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  {
+                    icon: <Thermometer size={18} />,
+                    value: result.env_snapshot.temperature != null ? `${result.env_snapshot.temperature.toFixed(1)}°C` : "—",
+                    label: "Temperature",
+                  },
+                  {
+                    icon: <Droplets size={18} />,
+                    value: result.env_snapshot.humidity != null ? `${result.env_snapshot.humidity.toFixed(0)}%` : "—",
+                    label: "Humidity",
+                  },
+                  {
+                    icon: <Sun size={18} />,
+                    value: result.env_snapshot.uv_index != null ? result.env_snapshot.uv_index.toFixed(1) : "—",
+                    label: "UV Index",
+                    warn: (result.env_snapshot.uv_index ?? 0) >= 6,
+                  },
+                  {
+                    icon: <Wind size={18} />,
+                    value: result.env_snapshot.pm25 != null ? `${result.env_snapshot.pm25.toFixed(0)} µg/m³` : "—",
+                    label: "PM2.5",
+                  },
+                ].map((m) => (
+                  <div key={m.label} className="bg-bg-surface rounded-xl border border-border-default p-4 text-center">
+                    <div className="flex justify-center mb-2 text-text-tertiary">{m.icon}</div>
+                    <div className={`font-display text-xl ${m.warn ? "text-severity-moderate" : "text-text-primary"}`}>
+                      {m.value}
+                    </div>
+                    <div className="text-xs text-text-tertiary mt-1">{m.label}</div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Observations / Insights */}
+          {result.observations.length > 0 && (
+            <section className="glass-panel p-6">
+              <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-4">
+                Insights
+              </h3>
+              <div className="space-y-4">
+                {result.observations.map((obs, i) => (
+                  <div key={i} className="flex gap-3 border-l-2 border-accent pl-4">
+                    <p className="text-sm text-text-primary leading-relaxed">{obs}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Active Ingredients */}
-          <div className="card-surface-1 p-6">
+          <section className="glass-panel p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-card-header font-display text-white">Active ingredients</h3>
-              <Link href="/ingredients" className="text-micro text-accent hover:underline">Manage ›</Link>
+              <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                Active Ingredients
+              </h3>
+              <Link href={ROUTES.INGREDIENTS} className="text-xs text-accent hover:underline">
+                Manage ›
+              </Link>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {["Niacinamide", "Retinol", "Salicylic Acid"].map((name) => (
-                <span key={name} className="bg-surface-2 text-xs-body text-slate-300 px-3 py-1.5 rounded-lg">
-                  {name}
-                </span>
-              ))}
-            </div>
+            {result.active_ingredients.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {result.active_ingredients.map((ing) => (
+                  <span
+                    key={ing.id}
+                    className="bg-bg-surface border border-border-default text-sm text-text-primary px-3 py-1.5 rounded-lg"
+                  >
+                    {ing.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-text-tertiary italic">No active ingredients logged for this check-in.</p>
+            )}
+          </section>
+
+          {/* Inference Metadata */}
+          <div className="flex items-center justify-center gap-4 text-[10px] text-text-tertiary font-medium uppercase tracking-wider">
+            <span>Inference: {result.inference_ms}ms</span>
+            <span>·</span>
+            <span>Check-in ID: {result.checkin_id.slice(0, 8)}</span>
           </div>
         </div>
       </div>

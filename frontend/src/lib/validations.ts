@@ -14,8 +14,8 @@ export const registerSchema = z
       .min(1, "Password is required")
       .min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
-    acceptTerms: z.literal(true, {
-      error: "You must accept the Privacy Policy and Terms of Use",
+    acceptTerms: z.boolean().refine((val) => val === true, {
+      message: "You must accept the Privacy Policy and Terms of Use",
     }),
   })
   .refine((data) => data.password === data.confirmPassword, {

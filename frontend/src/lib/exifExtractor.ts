@@ -8,18 +8,18 @@ import exifr from 'exifr';
  */
 export async function extractExifData(
   file: File
-): Promise<{ capturedAt: string | null; lat: number | null; lng: number | null }> {
+): Promise<{ captured_at: string | null; lat: number | null; lng: number | null }> {
   try {
     const output = await exifr.parse(file);
 
     if (!output) {
-      return { capturedAt: null, lat: null, lng: null };
+      return { captured_at: null, lat: null, lng: null };
     }
 
-    let capturedAt: string | null = null;
+    let captured_at: string | null = null;
     if (output.DateTimeOriginal) {
       const dt = output.DateTimeOriginal;
-      capturedAt = dt instanceof Date ? dt.toISOString() : new Date(dt).toISOString();
+      captured_at = dt instanceof Date ? dt.toISOString() : new Date(dt).toISOString();
     }
 
     let lat: number | null = null;
@@ -30,9 +30,9 @@ export async function extractExifData(
       lng = Math.round(output.longitude * 100) / 100;
     }
 
-    return { capturedAt, lat, lng };
+    return { captured_at, lat, lng };
   } catch (error) {
     console.warn('[SkinWISE] EXIF extraction failed:', error);
-    return { capturedAt: null, lat: null, lng: null };
+    return { captured_at: null, lat: null, lng: null };
   }
 }

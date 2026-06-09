@@ -9,16 +9,8 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import { registerSchema, type RegisterFormData } from "@/lib/validations";
 
-/* ─── Placeholder API call (will be replaced in Prompt 3) ─── */
-async function registerUser(
-  email: string,
-  password: string
-): Promise<{ success: boolean }> {
-  console.log("[SkinWISE] Register:", { email, passwordLength: password.length });
-  return new Promise((resolve) =>
-    setTimeout(() => resolve({ success: true }), 1500)
-  );
-}
+import { registerAction } from "@/app/actions/auth";
+import { useAuthStore } from "@/store";
 
 /* ─── Google SVG Icon ─── */
 function GoogleIcon() {
@@ -49,6 +41,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const setToken = useAuthStore((s) => s.setToken);
+  const setUser = useAuthStore((s) => s.setUser);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -66,14 +60,20 @@ export default function RegisterPage() {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
+    console.log("[SkinWISE] Register onSubmit called", data);
     setServerError(null);
     try {
-      const result = await registerUser(data.email, data.password);
-      if (result.success) {
+      const result = await registerAction({ email: data.email, password: data.password });
+      console.log("[SkinWISE] Register action result:", result);
+      if (result.success && result.token && result.user) {
+        setToken(result.token);
+        setUser(result.user as any);
         router.push(ROUTES.DASHBOARD);
+      } else {
+        setServerError(result.error || "Something went wrong.");
       }
     } catch {
-      setServerError("Something went wrong. Please try again.");
+      setServerError("An unexpected error occurred.");
     }
   };
 
@@ -86,10 +86,10 @@ export default function RegisterPage() {
     <>
       {/* Header */}
       <div className="mb-8 hidden lg:block">
-        <h2 className="font-serif text-card-header text-skin-charcoal">
+        <h2 className="font-display text-2xl text-text-primary">
           Create your account
         </h2>
-        <p className="text-sm text-skin-muted mt-1">
+        <p className="text-sm text-text-tertiary mt-1">
           Start tracking your skin with clinical precision.
         </p>
       </div>
@@ -98,7 +98,7 @@ export default function RegisterPage() {
       <button
         type="button"
         onClick={handleGoogleAuth}
-        className="w-full flex items-center justify-center gap-3 border border-skin-border rounded-card h-11 text-sm font-medium text-skin-charcoal hover:bg-skin-cream/60 transition-colors duration-200"
+        className="w-full flex items-center justify-center gap-3 border border-border-default rounded-card h-11 text-sm font-medium text-text-primary hover:bg-bg-base/60 transition-colors duration-200"
       >
         <GoogleIcon />
         Continue with Google
@@ -107,10 +107,10 @@ export default function RegisterPage() {
       {/* Divider */}
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-skin-border" />
+          <div className="w-full border-t border-border-default" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-skin-surface px-3 text-xs text-skin-muted uppercase tracking-widest">
+          <span className="bg-bg-surface px-3 text-xs text-text-tertiary uppercase tracking-widest">
             or
           </span>
         </div>
@@ -118,18 +118,26 @@ export default function RegisterPage() {
 
       {/* Server error */}
       {serverError && (
-        <div className="mb-4 p-3 rounded-xl bg-skin-rose/10 border border-skin-rose/20 text-sm text-skin-rose">
+        <div className="mb-4 p-3 rounded-xl bg-severity-severe/10 border border-severity-severe/20 text-sm text-severity-severe">
           {serverError}
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form 
+        onSubmit={handleSubmit(onSubmit, (errs) => {
+          console.log("[SkinWISE] Validation errors:", errs);
+          const firstError = Object.values(errs)[0]?.message;
+          if (firstError) alert(`Validation Error: ${firstError as string}`);
+        })} 
+        className="space-y-4" 
+        noValidate
+      >
         {/* Email */}
         <div className="space-y-1.5">
           <label
             htmlFor="register-email"
-            className="block text-sm font-medium text-skin-charcoal"
+            className="block text-sm font-medium text-text-primary"
           >
             Email
           </label>
@@ -138,13 +146,14 @@ export default function RegisterPage() {
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
-            className={`w-full px-4 py-2.5 rounded-card border bg-skin-surface text-skin-charcoal placeholder:text-skin-muted/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-skin-sage/40 focus:border-skin-sage ${
-              errors.email ? "border-skin-rose" : "border-skin-border"
+            className={`w-full px-4 py-2.5 rounded-card border bg-bg-surface text-text-primary placeholder:text-text-tertiary/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent ${
+              errors.email ? "border-severity-severe" : "border-border-default"
             }`}
+            aria-describedby={errors.email ? "register-email-error" : undefined}
             {...register("email")}
           />
           {errors.email && (
-            <p className="text-xs text-skin-rose">{errors.email.message}</p>
+            <p id="register-email-error" className="text-xs text-severity-severe">{errors.email.message}</p>
           )}
         </div>
 
@@ -152,7 +161,7 @@ export default function RegisterPage() {
         <div className="space-y-1.5">
           <label
             htmlFor="register-password"
-            className="block text-sm font-medium text-skin-charcoal"
+            className="block text-sm font-medium text-text-primary"
           >
             Password
           </label>
@@ -162,22 +171,23 @@ export default function RegisterPage() {
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               placeholder="Min. 8 characters"
-              className={`w-full px-4 py-2.5 pr-11 rounded-card border bg-skin-surface text-skin-charcoal placeholder:text-skin-muted/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-skin-sage/40 focus:border-skin-sage ${
-                errors.password ? "border-skin-rose" : "border-skin-border"
+              className={`w-full px-4 py-2.5 pr-11 rounded-card border bg-bg-surface text-text-primary placeholder:text-text-tertiary/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent ${
+                errors.password ? "border-severity-severe" : "border-border-default"
               }`}
+              aria-describedby={errors.password ? "register-password-error" : undefined}
               {...register("password")}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-skin-muted hover:text-skin-charcoal transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           {errors.password && (
-            <p className="text-xs text-skin-rose">{errors.password.message}</p>
+            <p id="register-password-error" className="text-xs text-severity-severe">{errors.password.message}</p>
           )}
         </div>
 
@@ -185,7 +195,7 @@ export default function RegisterPage() {
         <div className="space-y-1.5">
           <label
             htmlFor="register-confirm"
-            className="block text-sm font-medium text-skin-charcoal"
+            className="block text-sm font-medium text-text-primary"
           >
             Confirm Password
           </label>
@@ -195,24 +205,25 @@ export default function RegisterPage() {
               type={showConfirm ? "text" : "password"}
               autoComplete="new-password"
               placeholder="Re-enter your password"
-              className={`w-full px-4 py-2.5 pr-11 rounded-card border bg-skin-surface text-skin-charcoal placeholder:text-skin-muted/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-skin-sage/40 focus:border-skin-sage ${
+              className={`w-full px-4 py-2.5 pr-11 rounded-card border bg-bg-surface text-text-primary placeholder:text-text-tertiary/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent ${
                 errors.confirmPassword
-                  ? "border-skin-rose"
-                  : "border-skin-border"
+                  ? "border-severity-severe"
+                  : "border-border-default"
               }`}
+              aria-describedby={errors.confirmPassword ? "register-confirm-error" : undefined}
               {...register("confirmPassword")}
             />
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-skin-muted hover:text-skin-charcoal transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition-colors"
               aria-label={showConfirm ? "Hide password" : "Show password"}
             >
               {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="text-xs text-skin-rose">
+            <p id="register-confirm-error" className="text-xs text-severity-severe">
               {errors.confirmPassword.message}
             </p>
           )}
@@ -222,28 +233,28 @@ export default function RegisterPage() {
         <label className="flex items-start gap-2.5 cursor-pointer pt-1">
           <input
             type="checkbox"
-            className="mt-0.5 w-4 h-4 rounded border-skin-border text-skin-sage focus:ring-skin-sage/30 accent-skin-sage"
+            className="mt-0.5 w-4 h-4 rounded border-border-default text-accent focus:ring-accent/30 accent-accent"
             {...register("acceptTerms")}
           />
-          <span className="text-xs text-skin-muted leading-relaxed">
+          <span className="text-xs text-text-tertiary leading-relaxed">
             I agree to the{" "}
             <Link
               href="/privacy"
-              className="text-skin-sage underline underline-offset-2 hover:text-skin-sage/80"
+              className="text-accent underline underline-offset-2 hover:text-accent/80"
             >
               Privacy Policy
             </Link>{" "}
             and{" "}
             <Link
               href="/terms"
-              className="text-skin-sage underline underline-offset-2 hover:text-skin-sage/80"
+              className="text-accent underline underline-offset-2 hover:text-accent/80"
             >
               Terms of Use
             </Link>
           </span>
         </label>
         {errors.acceptTerms && (
-          <p className="text-xs text-skin-rose -mt-2">
+          <p className="text-xs text-severity-severe -mt-2">
             {errors.acceptTerms.message}
           </p>
         )}
@@ -252,7 +263,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 bg-skin-charcoal text-skin-cream font-medium text-sm h-11 rounded-card hover:bg-skin-charcoal/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 bg-brand text-text-inverse font-medium text-sm h-11 rounded-card hover:bg-brand/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting && <Loader2 size={16} className="animate-spin" />}
           {isSubmitting ? "Creating account…" : "Create account"}
@@ -260,11 +271,11 @@ export default function RegisterPage() {
       </form>
 
       {/* Footer link */}
-      <p className="text-center text-sm text-skin-muted mt-6">
+      <p className="text-center text-sm text-text-tertiary mt-6">
         Already have an account?{" "}
         <Link
           href={ROUTES.LOGIN}
-          className="text-skin-sage font-medium hover:underline underline-offset-2"
+          className="text-accent font-medium hover:underline underline-offset-2"
         >
           Sign in
         </Link>

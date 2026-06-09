@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Detection } from "@/store/types";
 
 interface AnnotatedImageProps {
-  imageUrl: string;
+  image_url: string;
   detections: Detection[];
   isLoading: boolean;
 }
@@ -23,18 +23,18 @@ const CLASS_INITIALS: Record<string, string> = {
   nodule: "N",
 };
 
-export default function AnnotatedImage({ imageUrl, detections, isLoading }: AnnotatedImageProps) {
+export default function AnnotatedImage({ image_url, detections, isLoading }: AnnotatedImageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    if (!imageUrl) return;
+    if (!image_url) return;
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = imageUrl;
+    img.src = image_url;
     img.onload = () => setImageObj(img);
-  }, [imageUrl]);
+  }, [image_url]);
 
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current || !imageObj) return;
@@ -69,18 +69,18 @@ export default function AnnotatedImage({ imageUrl, detections, isLoading }: Anno
       
       // Draw detections
       detections.forEach(det => {
-        const x = xOffset + det.bboxX * scaledWidth;
-        const y = yOffset + det.bboxY * scaledHeight;
-        const w = det.bboxW * scaledWidth;
-        const h = det.bboxH * scaledHeight;
+        const x = xOffset + det.bbox_x * scaledWidth;
+        const y = yOffset + det.bbox_y * scaledHeight;
+        const w = det.bbox_w * scaledWidth;
+        const h = det.bbox_h * scaledHeight;
         
-        const color = CLASS_COLORS[det.className] || "#FFFFFF";
+        const color = CLASS_COLORS[det.class_name] || "#FFFFFF";
         
         // Bounding box
         ctx.beginPath();
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
-        if (det.lowConf) {
+        if (det.low_conf) {
           ctx.setLineDash([5, 3]);
         } else {
           ctx.setLineDash([]);
@@ -90,7 +90,7 @@ export default function AnnotatedImage({ imageUrl, detections, isLoading }: Anno
         
         // Pill background
         ctx.setLineDash([]);
-        const initial = CLASS_INITIALS[det.className] || det.className.charAt(0).toUpperCase();
+        const initial = CLASS_INITIALS[det.class_name] || det.class_name.charAt(0).toUpperCase();
         
         ctx.font = "bold 11px 'DM Sans', sans-serif";
         const textMetrics = ctx.measureText(initial);
@@ -127,7 +127,7 @@ export default function AnnotatedImage({ imageUrl, detections, isLoading }: Anno
       if (detections.length > 0) {
         const counts: Record<string, number> = {};
         detections.forEach(d => {
-          counts[d.className] = (counts[d.className] || 0) + 1;
+          counts[d.class_name] = (counts[d.class_name] || 0) + 1;
         });
         
         const legendX = 16;
@@ -174,10 +174,10 @@ export default function AnnotatedImage({ imageUrl, detections, isLoading }: Anno
   if (detections.length > 0) {
     const counts = { comedones: 0, papules: 0, pustules: 0, nodules: 0 };
     detections.forEach(d => {
-      if (d.className === "comedone") counts.comedones++;
-      if (d.className === "papule") counts.papules++;
-      if (d.className === "pustule") counts.pustules++;
-      if (d.className === "nodule") counts.nodules++;
+      if (d.class_name === "comedone") counts.comedones++;
+      if (d.class_name === "papule") counts.papules++;
+      if (d.class_name === "pustule") counts.pustules++;
+      if (d.class_name === "nodule") counts.nodules++;
     });
     ariaLabel = `Annotated skin image. Detected: ${counts.comedones} comedones, ${counts.papules} papules, ${counts.pustules} pustules, ${counts.nodules} nodules.`;
   }

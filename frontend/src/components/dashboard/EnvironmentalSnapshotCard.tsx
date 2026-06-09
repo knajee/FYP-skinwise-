@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils";
 
 interface EnvironmentalSnapshotCardProps {
   snapshot: EnvSnapshot | null;
-  capturedAt: string;
+  captured_at: string;
 }
 
-export default function EnvironmentalSnapshotCard({ snapshot, capturedAt }: EnvironmentalSnapshotCardProps) {
-  const formattedDate = new Date(capturedAt).toLocaleString(undefined, {
+export default function EnvironmentalSnapshotCard({ snapshot, captured_at }: EnvironmentalSnapshotCardProps) {
+  const formattedDate = new Date(captured_at).toLocaleString(undefined, {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -55,12 +55,12 @@ export default function EnvironmentalSnapshotCard({ snapshot, capturedAt }: Envi
         {/* UV Index */}
         <div className={cn(
           "flex flex-col items-center justify-center p-3 rounded-xl border border-border-default min-w-[80px]",
-          snapshot?.uvIndex && snapshot.uvIndex > 6 ? "bg-severity-moderate/10 border-severity-moderate/30" : "bg-bg-surface"
+          snapshot?.uv_index && snapshot.uv_index > 6 ? "bg-severity-moderate/10 border-severity-moderate/30" : "bg-bg-surface"
         )}>
           <Sun size={18} className="text-text-tertiary mb-1.5" />
           <dt className="sr-only">UV Index</dt>
           <dd className="font-display text-lg text-text-primary">
-            {snapshot?.uvIndex ? snapshot.uvIndex : "—"}
+            {snapshot?.uv_index ? snapshot.uv_index : "—"}
           </dd>
         </div>
 
@@ -80,19 +80,19 @@ export default function EnvironmentalSnapshotCard({ snapshot, capturedAt }: Envi
       <div className="pt-3 border-t border-border-default">
         <p className="text-xs font-medium text-text-tertiary mb-2">Captured: {formattedDate}</p>
         
-        {snapshot?.dataSource === "open-meteo-unavailable" && (
+        {snapshot?.data_source === "open-meteo-unavailable" && (
           <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-severity-moderate/10 text-severity-moderate text-xs font-medium border border-severity-moderate/20">
             Environmental data unavailable for this check-in
           </div>
         )}
         
-        {snapshot?.dataSource === "assumed-upload-time" && (
+        {snapshot?.data_source === "assumed-upload-time" && (
           <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-severity-moderate/10 text-severity-moderate text-xs font-medium border border-severity-moderate/20">
             ⚠ Capture time unknown — environmental data may be inaccurate
           </div>
         )}
         
-        {snapshot?.dataSource === "open-meteo-only" && (
+        {snapshot?.data_source === "open-meteo-only" && (
           <p className="text-xs text-text-tertiary italic">Air quality data unavailable</p>
         )}
       </div>

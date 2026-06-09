@@ -33,19 +33,19 @@ export default function HistoryPage() {
     <div className="max-w-container mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-section text-white">History</h1>
-          <p className="text-xs-body text-slate-400 mt-1">All your skin check-ins</p>
+          <h1 className="font-display text-3xl text-text-primary">History</h1>
+          <p className="text-sm text-text-secondary mt-1">All your skin check-ins</p>
         </div>
         <div className="flex items-center gap-2">
-          <Filter size={14} className="text-slate-500" />
+          <Filter size={14} className="text-text-tertiary" />
           {["all", "mild", "moderate", "severe"].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s === "all" ? null : s)}
-              className={`text-micro font-mono px-2.5 py-1 rounded-full transition-colors ${
+              className={`text-xs font-mono px-2.5 py-1 rounded-full transition-colors ${
                 (s === "all" && !filter) || filter === s
                   ? "bg-accent/10 text-accent"
-                  : "text-slate-500 hover:text-slate-300"
+                  : "text-text-tertiary hover:text-text-secondary"
               }`}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -57,7 +57,7 @@ export default function HistoryPage() {
       {Object.entries(grouped).map(([month, items]) => (
         <div key={month} className="mb-8">
           <div className="sticky top-14 z-10 bg-canvas/90 backdrop-blur-sm py-2 mb-3">
-            <h2 className="text-xs-body font-mono text-slate-500 uppercase tracking-wider">{month}</h2>
+            <h2 className="text-sm font-mono text-text-tertiary uppercase tracking-wider">{month}</h2>
           </div>
           <div className="space-y-3">
             {items.map((item) => (
@@ -73,25 +73,25 @@ export default function HistoryPage() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-micro font-mono text-accent mb-1">{item.date}</div>
+                  <div className="text-xs font-mono text-accent mb-1">{item.date}</div>
                   <div className="flex items-center gap-3 mb-1.5">
-                    <span className={`${severityStyles[item.severity]} text-micro font-mono px-2 py-0.5 rounded`}>
+                    <span className={`${severityStyles[item.severity]} text-xs font-mono px-2 py-0.5 rounded`}>
                       {item.severity.toUpperCase()}
                     </span>
-                    <span className="text-micro font-mono text-slate-500">
+                    <span className="text-xs font-mono text-text-tertiary">
                       C{item.lesions.C} · Pa{item.lesions.Pa} · Pu{item.lesions.Pu} · N{item.lesions.N}
                     </span>
                   </div>
                   <div className="flex gap-2">
                     {item.env.map((e) => (
-                      <span key={e} className="text-micro text-slate-500 bg-surface-2 px-1.5 py-0.5 rounded">
+                      <span key={e} className="text-xs text-text-tertiary bg-surface-2 px-1.5 py-0.5 rounded">
                         {e}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <ChevronRight size={16} className="text-slate-600 group-hover:text-accent transition-colors flex-shrink-0" />
+                <ChevronRight size={16} className="text-text-tertiary group-hover:text-accent transition-colors flex-shrink-0" />
               </Link>
             ))}
           </div>

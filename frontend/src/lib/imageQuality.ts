@@ -153,14 +153,15 @@ export async function checkLuminance(file: File): Promise<{ mean: number; passed
 }
 
 /**
- * Checks if the image meets the minimum resolution requirement (480x480).
+ * Checks if the image meets the minimum resolution requirement (200x200).
+ * // TODO: Revert to 480x480 for production deployment.
  */
 export async function checkResolution(file: File): Promise<{ width: number; height: number; passed: boolean }> {
   if (typeof window === "undefined") return { width: 1000, height: 1000, passed: true }; // Pass through in SSR
 
   try {
     const img = await loadImage(file);
-    const passed = img.naturalWidth >= 480 && img.naturalHeight >= 480;
+    const passed = img.naturalWidth >= 200 && img.naturalHeight >= 200;
     return { width: img.naturalWidth, height: img.naturalHeight, passed };
   } catch (error) {
     console.warn("[SkinWISE] Resolution check failed:", error);

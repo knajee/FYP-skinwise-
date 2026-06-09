@@ -9,17 +9,8 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import { loginSchema, type LoginFormData } from "@/lib/validations";
 
-/* ─── Placeholder API call (will be replaced in Prompt 3) ─── */
-async function loginUser(
-  email: string,
-  password: string,
-  rememberMe?: boolean
-): Promise<{ success: boolean }> {
-  console.log("[SkinWISE] Login:", { email, passwordLength: password.length, rememberMe });
-  return new Promise((resolve) =>
-    setTimeout(() => resolve({ success: true }), 1500)
-  );
-}
+import { loginAction } from "@/app/actions/auth";
+import { useAuthStore } from "@/store";
 
 /* ─── Google SVG Icon ─── */
 function GoogleIcon() {
@@ -49,6 +40,8 @@ function GoogleIcon() {
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const setToken = useAuthStore((s) => s.setToken);
+  const setUser = useAuthStore((s) => s.setUser);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -65,18 +58,20 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    console.log("[SkinWISE] Login onSubmit called", data);
     setServerError(null);
     try {
-      const result = await loginUser(
-        data.email,
-        data.password,
-        data.rememberMe
-      );
-      if (result.success) {
+      const result = await loginAction(data as unknown as Record<string, string>);
+      console.log("[SkinWISE] Login action result:", result);
+      if (result.success && result.token && result.user) {
+        setToken(result.token);
+        setUser(result.user as any);
         router.push(ROUTES.DASHBOARD);
+      } else {
+        setServerError(result.error || "Invalid email or password.");
       }
     } catch {
-      setServerError("Invalid email or password. Please try again.");
+      setServerError("An unexpected error occurred.");
     }
   };
 
@@ -89,10 +84,10 @@ export default function LoginPage() {
     <>
       {/* Header */}
       <div className="mb-8 hidden lg:block">
-        <h2 className="font-serif text-card-header text-skin-charcoal">
+        <h2 className="font-display text-2xl text-text-primary">
           Welcome back
         </h2>
-        <p className="text-sm text-skin-muted mt-1">
+        <p className="text-sm text-text-tertiary mt-1">
           Sign in to continue tracking your skin health.
         </p>
       </div>
@@ -101,7 +96,7 @@ export default function LoginPage() {
       <button
         type="button"
         onClick={handleGoogleAuth}
-        className="w-full flex items-center justify-center gap-3 border border-skin-border rounded-card h-11 text-sm font-medium text-skin-charcoal hover:bg-skin-cream/60 transition-colors duration-200"
+        className="w-full flex items-center justify-center gap-3 border border-border-default rounded-card h-11 text-sm font-medium text-text-primary hover:bg-bg-base/60 transition-colors duration-200"
       >
         <GoogleIcon />
         Continue with Google
@@ -110,10 +105,10 @@ export default function LoginPage() {
       {/* Divider */}
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-skin-border" />
+          <div className="w-full border-t border-border-default" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-skin-surface px-3 text-xs text-skin-muted uppercase tracking-widest">
+          <span className="bg-bg-surface px-3 text-xs text-text-tertiary uppercase tracking-widest">
             or
           </span>
         </div>
@@ -121,7 +116,7 @@ export default function LoginPage() {
 
       {/* Server error */}
       {serverError && (
-        <div className="mb-4 p-3 rounded-xl bg-skin-rose/10 border border-skin-rose/20 text-sm text-skin-rose">
+        <div className="mb-4 p-3 rounded-xl bg-severity-severe/10 border border-severity-severe/20 text-sm text-severity-severe">
           {serverError}
         </div>
       )}
@@ -132,7 +127,7 @@ export default function LoginPage() {
         <div className="space-y-1.5">
           <label
             htmlFor="login-email"
-            className="block text-sm font-medium text-skin-charcoal"
+            className="block text-sm font-medium text-text-primary"
           >
             Email
           </label>
@@ -141,13 +136,14 @@ export default function LoginPage() {
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
-            className={`w-full px-4 py-2.5 rounded-card border bg-skin-surface text-skin-charcoal placeholder:text-skin-muted/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-skin-sage/40 focus:border-skin-sage ${
-              errors.email ? "border-skin-rose" : "border-skin-border"
+            className={`w-full px-4 py-2.5 rounded-card border bg-bg-surface text-text-primary placeholder:text-text-tertiary/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent ${
+              errors.email ? "border-severity-severe" : "border-border-default"
             }`}
+            aria-describedby={errors.email ? "login-email-error" : undefined}
             {...register("email")}
           />
           {errors.email && (
-            <p className="text-xs text-skin-rose">{errors.email.message}</p>
+            <p id="login-email-error" className="text-xs text-severity-severe">{errors.email.message}</p>
           )}
         </div>
 
@@ -156,13 +152,13 @@ export default function LoginPage() {
           <div className="flex items-center justify-between">
             <label
               htmlFor="login-password"
-              className="block text-sm font-medium text-skin-charcoal"
+              className="block text-sm font-medium text-text-primary"
             >
               Password
             </label>
             <Link
               href={ROUTES.FORGOT_PASSWORD}
-              className="text-xs text-skin-sage hover:underline underline-offset-2"
+              className="text-xs text-accent hover:underline underline-offset-2"
             >
               Forgot password?
             </Link>
@@ -173,22 +169,23 @@ export default function LoginPage() {
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               placeholder="Enter your password"
-              className={`w-full px-4 py-2.5 pr-11 rounded-card border bg-skin-surface text-skin-charcoal placeholder:text-skin-muted/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-skin-sage/40 focus:border-skin-sage ${
-                errors.password ? "border-skin-rose" : "border-skin-border"
+              className={`w-full px-4 py-2.5 pr-11 rounded-card border bg-bg-surface text-text-primary placeholder:text-text-tertiary/50 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent ${
+                errors.password ? "border-severity-severe" : "border-border-default"
               }`}
+              aria-describedby={errors.password ? "login-password-error" : undefined}
               {...register("password")}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-skin-muted hover:text-skin-charcoal transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           {errors.password && (
-            <p className="text-xs text-skin-rose">{errors.password.message}</p>
+            <p id="login-password-error" className="text-xs text-severity-severe">{errors.password.message}</p>
           )}
         </div>
 
@@ -196,17 +193,17 @@ export default function LoginPage() {
         <label className="flex items-center gap-2.5 cursor-pointer">
           <input
             type="checkbox"
-            className="w-4 h-4 rounded border-skin-border text-skin-sage focus:ring-skin-sage/30 accent-skin-sage"
+            className="w-4 h-4 rounded border-border-default text-accent focus:ring-accent/30 accent-accent"
             {...register("rememberMe")}
           />
-          <span className="text-sm text-skin-muted">Remember me</span>
+          <span className="text-sm text-text-tertiary">Remember me</span>
         </label>
 
         {/* Submit */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 bg-skin-charcoal text-skin-cream font-medium text-sm h-11 rounded-card hover:bg-skin-charcoal/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 bg-brand text-text-inverse font-medium text-sm h-11 rounded-card hover:bg-brand/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting && <Loader2 size={16} className="animate-spin" />}
           {isSubmitting ? "Signing in…" : "Sign in"}
@@ -214,11 +211,11 @@ export default function LoginPage() {
       </form>
 
       {/* Footer link */}
-      <p className="text-center text-sm text-skin-muted mt-6">
+      <p className="text-center text-sm text-text-tertiary mt-6">
         Don&apos;t have an account?{" "}
         <Link
           href={ROUTES.REGISTER}
-          className="text-skin-sage font-medium hover:underline underline-offset-2"
+          className="text-accent font-medium hover:underline underline-offset-2"
         >
           Create one
         </Link>
